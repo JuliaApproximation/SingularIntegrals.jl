@@ -517,8 +517,37 @@ end
 end
 
 
-# import LazyArrays: resizedata!
-# import ClassicalOrthogonalPolynomials: sqrtx2, _p0
+import LazyArrays: resizedata!, AbstractCachedMatrix
+import ClassicalOrthogonalPolynomials: sqrtx2, _p0
+
+mutable struct RecurrenceArray{T, N, XX<:AbstractMatix} <: AbstractCachedMatrix{T}
+    X::X
+    data::AbstractArray{T,N}
+    datasize::NTuple{N,Int}
+end
+
+
+RecurrenceArray(X, data) = RecurrenceArray(X, data, size(data))
+
+
+size(R::RecurrenceArray{<:Any,1}) = (ℵ₀,) # potential to add maximum size of operator
+size(R::RecurrenceArray{<:Any,2}) = (ℵ₀, size(R.data,2)) # potential to add maximum size of operator
+copy(R::RecurrenceArray) = R # immutable entries
+
+
+
+function faststieltjes(S, wP)
+    # since we build column-by-column its better to construct the transpose of the returned result
+    zs = S.args[1].args[1] # vector of points to eval at
+    x,ns = axes(wP)
+    m = length(zs)
+    n = length(ns)
+    P = wP.P
+    w = orthogonalityweight(P)
+    X = jacobimatrix(P)
+    T = promote_type(eltype(S), eltype(wP))
+    RecurrenceArray(X, fill(-sum(w)*_p0(P), 1, tail(size(zs))...))
+end
 
 # function faststieltjes(S, wP)
 #     # since we build column-by-column its better to construct the transpose of the returned result
