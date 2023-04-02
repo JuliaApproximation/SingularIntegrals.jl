@@ -1,8 +1,8 @@
-using ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, BandedMatrices, ArrayLayouts, LazyBandedMatrices, BlockArrays, Test
-import ClassicalOrthogonalPolynomials: Hilbert, StieltjesPoint, ChebyshevInterval, associated, Associated,
-        orthogonalityweight, Weighted, gennormalizedpower, *, dot, PowerLawMatrix, PowKernelPoint, LogKernelPoint,
-        MemoryLayout, PaddedLayout
-import InfiniteArrays: I
+using SingularIntegrals, ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, BandedMatrices, LinearAlgebra, Test
+using SingularIntegrals: Hilbert, StieltjesPoint, ChebyshevInterval, associated, Associated,
+        orthogonalityweight, Weighted, gennormalizedpower, *, dot, PowerLawMatrix, PowKernelPoint, LogKernelPoint, PowKernel
+using LazyArrays: MemoryLayout, PaddedLayout, colsupport, rowsupport, paddeddata
+using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths
 
 @testset "Associated" begin
     T = ChebyshevT()
@@ -223,7 +223,7 @@ end
         P = Weighted(Jacobi(0.1,0.2))
         x = axes(P,1)
         S = abs.(x .- x').^0.5
-        @test S isa ClassicalOrthogonalPolynomials.PowKernel
+        @test S isa PowKernel
         @test_broken S*P
     end
 
@@ -310,7 +310,7 @@ end
 
         @test iszero(H[1,1])
         @test H[3,1] ≈ π
-        @test maximum(BlockArrays.blockcolsupport(H,Block(5))) ≤ Block(50)
+        @test maximum(blockcolsupport(H,Block(5))) ≤ Block(50)
         @test blockbandwidths(H) == (25,26)
 
         c = W \ broadcast(x -> exp(x)* (0 ≤ x ≤ 2 ? sqrt(2-x)*sqrt(x) : sqrt(-1-x)*sqrt(x+2)), x)
@@ -319,8 +319,8 @@ end
 
         @testset "inversion" begin
             H̃ = BlockHcat(Eye((axes(H,1),))[:,Block(1)], H)
-            @test BlockArrays.blockcolsupport(H̃,Block(1)) == Block.(1:1)
-            @test last(BlockArrays.blockcolsupport(H̃,Block(2))) ≤ Block(30)
+            @test blockcolsupport(H̃,Block(1)) == Block.(1:1)
+            @test last(blockcolsupport(H̃,Block(2))) ≤ Block(30)
 
             UT = U \ T
             D = U \ Derivative(x) * T
@@ -517,110 +517,110 @@ end
 end
 
 
-import LazyArrays: resizedata!
-import ClassicalOrthogonalPolynomials: sqrtx2, _p0
+# import LazyArrays: resizedata!
+# import ClassicalOrthogonalPolynomials: sqrtx2, _p0
 
-function faststieltjes(S, wP)
-    # since we build column-by-column its better to construct the transpose of the returned result
-    zs = S.args[1].args[1] # vector of points to eval at
-    x,ns = axes(wP)
-    m = length(zs)
-    n = length(ns)
-    P = wP.P
-    w = orthogonalityweight(P)
-    X = jacobimatrix(P)
-    b,a,c = X.dl,X.d,X.du
-
-
-    T = promote_type(eltype(S), eltype(wP))
-    ret = zeros(T, n, m); # transpose as we fill column-by-column
-    r = minimum(abs, zs)
-    ξ = inv(r + sqrtx2(r))
-    n_d = ceil(Int,log(eps())/log(ξ))+1
-    resizedata!(ret, n_d, m)
-    data = ret.data
-    data[1,:] .= -sum(w)*_p0(P)
-
-    ã = similar(data, n_d)
-    tol = 10eps(T)
-
-    @inbounds for j = 1:m
-        # (X'-z*I) \ [μ; zeros(∞)] using LU with no pivot
-        z = zs[j]
-        ã[1] = a[1]-z
-
-        # forward elimination
-        k = 1
-        while abs(data[k,j]) > tol
-            k == n_d && error("reached limit of preallocation, without $(data[k,j])")
-            ℓ = -c[k]/ã[k]
-            ã[k+1] = ℓ*b[k]+a[k]-z
-            data[k+1,j] = ℓ*data[k,j]
-            k += 1
-        end
-
-        data[k,j] /= ã[k]
-
-        # back-sub
-        for k̃ = k-1:-1:1
-            data[k̃,j] = (data[k̃,j] - b[k̃]*data[k̃+1,j])/ã[k̃]
-        end
-    end
-    transpose(ret)
-end
-
-T = ChebyshevT()
-wT = Weighted(T)
-x = axes(T,1)
-z = range(1.01, 10; length=10_000); S = inv.(z .- x');
-@time faststieltjes(S, wT);
-
-z = range(5., 10; length=200_000); S = inv.(z .- x');
-@time faststieltjes(S, wT);
+# function faststieltjes(S, wP)
+#     # since we build column-by-column its better to construct the transpose of the returned result
+#     zs = S.args[1].args[1] # vector of points to eval at
+#     x,ns = axes(wP)
+#     m = length(zs)
+#     n = length(ns)
+#     P = wP.P
+#     w = orthogonalityweight(P)
+#     X = jacobimatrix(P)
+#     b,a,c = X.dl,X.d,X.du
 
 
-@time S*wT;
-j = 1
+#     T = promote_type(eltype(S), eltype(wP))
+#     ret = zeros(T, n, m); # transpose as we fill column-by-column
+#     r = minimum(abs, zs)
+#     ξ = inv(r + sqrtx2(r))
+#     n_d = ceil(Int,log(eps())/log(ξ))+1
+#     resizedata!(ret, n_d, m)
+#     data = ret.data
+#     data[1,:] .= -sum(w)*_p0(P)
 
-L,U = lu((X' - z*I)[1:n_d,1:n_d])
+#     ã = similar(data, n_d)
+#     tol = 10eps(T)
+
+#     @inbounds for j = 1:m
+#         # (X'-z*I) \ [μ; zeros(∞)] using LU with no pivot
+#         z = zs[j]
+#         ã[1] = a[1]-z
+
+#         # forward elimination
+#         k = 1
+#         while abs(data[k,j]) > tol
+#             k == n_d && error("reached limit of preallocation, without $(data[k,j])")
+#             ℓ = -c[k]/ã[k]
+#             ã[k+1] = ℓ*b[k]+a[k]-z
+#             data[k+1,j] = ℓ*data[k,j]
+#             k += 1
+#         end
+
+#         data[k,j] /= ã[k]
+
+#         # back-sub
+#         for k̃ = k-1:-1:1
+#             data[k̃,j] = (data[k̃,j] - b[k̃]*data[k̃+1,j])/ã[k̃]
+#         end
+#     end
+#     transpose(ret)
+# end
+
+# T = ChebyshevT()
+# wT = Weighted(T)
+# x = axes(T,1)
+# z = range(1.01, 10; length=10_000); S = inv.(z .- x');
+# @time faststieltjes(S, wT);
+
+# z = range(5., 10; length=200_000); S = inv.(z .- x');
+# @time faststieltjes(S, wT);
 
 
-P = Weighted(Legendre())
+# @time S*wT;
+# j = 1
 
-r = 1.001
-
-(inv.(r .- x') *P)[k]
-
-/(inv.(r .- x') *P)[1]
-
-π * ξ^k
-
-k*log(ξ) ≤ log(eps())
-
-import ClassicalOrthogonalPolynomials: sqrtx2
-z = 2.0
-ξ = inv(z + sqrtx2(z))
-ξ
-
-plot(abs.((inv.(2 .- x') * P)[1:100]); yscale=:log10)
-
-recurrencecoefficients(T)
+# L,U = lu((X' - z*I)[1:n_d,1:n_d])
 
 
-b = (5:2:∞) ./ (6:2:∞)
+# P = Weighted(Legendre())
 
-function f(b, N)
-    ret = 0.0
-    @inbounds for k = 1:N
-        ret += b[k]
-    end
-    ret
-end
+# r = 1.001
 
-function g(N)
-    ret = 0.0
-    @inbounds for k = 1:N
-        ret += (2k+3)/(2k+4)
-    end
-    ret
-end
+# (inv.(r .- x') *P)[k]
+
+# /(inv.(r .- x') *P)[1]
+
+# π * ξ^k
+
+# k*log(ξ) ≤ log(eps())
+
+# import ClassicalOrthogonalPolynomials: sqrtx2
+# z = 2.0
+# ξ = inv(z + sqrtx2(z))
+# ξ
+
+# plot(abs.((inv.(2 .- x') * P)[1:100]); yscale=:log10)
+
+# recurrencecoefficients(T)
+
+
+# b = (5:2:∞) ./ (6:2:∞)
+
+# function f(b, N)
+#     ret = 0.0
+#     @inbounds for k = 1:N
+#         ret += b[k]
+#     end
+#     ret
+# end
+
+# function g(N)
+#     ret = 0.0
+#     @inbounds for k = 1:N
+#         ret += (2k+3)/(2k+4)
+#     end
+#     ret
+# end

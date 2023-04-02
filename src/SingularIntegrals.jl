@@ -1,10 +1,15 @@
 module SingularIntegrals
-using ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, LazyArrays, LinearAlgebra
-using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector
+using ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, LazyArrays, LazyBandedMatrices, FillArrays, BandedMatrices, LinearAlgebra, SpecialFunctions, HypergeometricFunctions, InfiniteArrays
+using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector, inbounds_getindex, broadcastbasis
 using QuasiArrays: AbstractQuasiMatrix, BroadcastQuasiMatrix, LazyQuasiArrayStyle
-using ClassicalOrthogonalPolynomials: AbstractJacobiWeight, WeightedBasis
-using LazyArrays: AbstractCachedMatrix
-import Base: *, +, -, /, \, Slice
+import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, Clenshaw, chop
+using LazyBandedMatrices: Tridiagonal, SymTridiagonal, subdiagonaldata, supdiagonaldata, diagonaldata
+import LazyArrays: AbstractCachedMatrix, paddeddata, arguments, resizedata!
+import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy
+import LinearAlgebra: dot
+using BandedMatrices: _BandedMatrix
+
+export associated
 
 include("stieltjes.jl")
 include("power.jl")
