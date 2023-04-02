@@ -4,4 +4,13 @@ authors = ["Sheehan Olver <solver@mac.com>"]
 version = "0.1.0"
 
 [deps]
+ArrayLayouts = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
+BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
+BlockArrays = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
 ClassicalOrthogonalPolynomials = "b30e2e7b-c4ee-47da-9d5f-2c5c27239acd"
+ContinuumArrays = "7ae1f121-cc2c-504b-ac30-9b923412ae5c"
+LazyArrays = "5078a376-72f3-5289-bfd5-ec5146d43c02"
+LazyBandedMatrices = "d7e5e226-e90b-4449-9968-0f923699bf6f"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+QuasiArrays = "c4ea9172-b204-11e9-377d-29865faadc5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
