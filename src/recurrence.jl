@@ -39,7 +39,7 @@ function cache_filldata!(K::RecurrenceVector, kr)
     A,B,C = K.A,K.B,K.C
     z = K.z
     N = maximum(kr)
-    tol = 1000
+    tol = 100N
     p0, p1 = K.p0[1], K.p1[1]
     if s > 2 && iszero(K.data[s-1]) && iszero(K.data[s])
         # no data
