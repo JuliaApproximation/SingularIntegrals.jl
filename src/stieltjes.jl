@@ -171,6 +171,14 @@ end
     convert(T, π)/sqrtx2(z)
 end
 
+@simplify function *(S::StieltjesPoint, w::ChebyshevUWeight)
+    α,β = w.a,w.b
+    z,_ = parent(S).args[1].args
+    T = promote_type(eltype(S), eltype(w))
+    z in axes(w,1) && return π*z
+    convert(T, π)/(z + sqrtx2(z))
+end
+
 @simplify function *(S::StieltjesPoint, wP::Weighted)
     P = wP.P
     w = orthogonalityweight(P)

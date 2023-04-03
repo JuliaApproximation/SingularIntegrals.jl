@@ -38,14 +38,14 @@ function cache_filldata!(K::RecurrenceVector, kr)
     A,B,C = K.A,K.B,K.C
     z = K.z
     N = maximum(kr)
-    tol = 100N
+    tol = 100
     if s > 2 && iszero(K.data[s-1]) && iszero(K.data[s])
         # no data
         zero!(view(K.data, s+1:N))
     else
         p0, p1 = K.p0[1], K.p1[1]
         n = s
-        while abs(p1) < tol && n < N
+        while abs(p1) < tol*n && n < N
             p1,p0 = _forwardrecurrence_next(n, A, B, C, z, p0, p1),p1
             n += 1
         end

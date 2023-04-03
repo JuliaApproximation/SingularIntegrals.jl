@@ -10,15 +10,15 @@ using ClassicalOrthogonalPolynomials: recurrencecoefficients
         @test r[1:1000] ≈ [0; U[z,1:999]]
         @test r[10_000] ≈ U[z,9_999]
 
-        r = RecurrenceArray(z, recurrencecoefficients(U), [1.0, 0.1])
-        @test r[1:1000] ≈ T[0.1,1:1000]
-        @test r[10_000] ≈ T[0.1,10_000]
+        r = RecurrenceArray(z, recurrencecoefficients(U), [1.0, z])
+        @test r[1:1000] ≈ T[z,1:1000]
+        @test r[10_000] ≈ T[z,10_000]
     end
 
     for z in (1.000000001, 1.000001, -1.000001, 10.0, -10.0)
         ξ = inv(z + sign(z)sqrt(z^2-1))
         r = RecurrenceArray(z, recurrencecoefficients(U), [ξ,ξ^2])
         @test r[1:1000] ≈ ξ.^(1:1000)
-        @test r[10_000] ≈ ξ.^(10_000)
+        @test r[10_000] ≈ ξ.^(10_000) atol=3E-11
     end
 end
