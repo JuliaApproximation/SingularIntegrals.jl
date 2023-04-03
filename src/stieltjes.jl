@@ -163,25 +163,30 @@ stieltjesmoment_jacobi_normalization(n::Int,α::Real,β::Real) = 2^(α+β)*gamma
     (x = 2/(1-z);stieltjesmoment_jacobi_normalization(0,α,β)*HypergeometricFunctions.mxa_₂F₁(1,α+1,α+β+2,x))
 end
 
+@simplify function *(S::StieltjesPoint, w::ChebyshevTWeight)
+    α,β = w.a,w.b
+    z,_ = parent(S).args[1].args
+    T = promote_type(eltype(S), eltype(w))
+    z in axes(w,1) && return zero(T)
+    convert(T, π)/sqrtx2(z)
+end
+
 @simplify function *(S::StieltjesPoint, wP::Weighted)
     P = wP.P
     w = orthogonalityweight(P)
-    X = jacobimatrix(P)
     z, xc = parent(S).args[1].args
-    z in axes(P,1) && return transpose(view(inv.(xc' .- xc) * wP,z,:))
-    transpose((X'-z*I) \ [-sum(w)*_p0(P); zeros(∞)])
+    A,B,C = recurrencecoefficients(P)
+    r1 = (S * w)*_p0(P) # stieltjes of the weight
+    # (a[1]-z)*r[1] + b[1]r[2] == -sum(w)*_p0(P)
+    # (a[1]/b[1]-z/b[1])*r[1] + r[2] == -sum(w)*_p0(P)/b[1]
+    # (A[1]z + B[1])*r[1] - r[2] == A[1]sum(w)*_p0(P)
+    # (A[1]z + B[1])*r[1]-A[1]sum(w)*_p0(P) ==  r[2] 
+    r2 = (A[1]z + B[1])*r1-A[1]sum(w)*_p0(P)
+    transpose(RecurrenceArray(z, (A,B,C), [r1,r2]))
 end
 
 sqrtx2(z::Number) = sqrt(z-1)*sqrt(z+1)
 sqrtx2(x::Real) = sign(x)*sqrt(x^2-1)
-
-@simplify function *(S::StieltjesPoint, wP::Weighted{<:Any,<:ChebyshevU})
-    T = promote_type(eltype(S), eltype(wP))
-    z, xc = parent(S).args[1].args
-    z in axes(wP,1) && return  (convert(T,π)*ChebyshevT()[z,2:end])'
-    ξ = inv(z + sqrtx2(z))
-    transpose(convert(T,π) * ξ.^oneto(∞))
-end
 
 
 @simplify function *(S::StieltjesPoint, P::Legendre)

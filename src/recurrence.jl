@@ -1,11 +1,10 @@
 """
-    r = RecurrenceArray(z::Number, A, B, C, μ::Number, r1::Number)
+    r = RecurrenceArray(z, (A, B, C), data)
 
-is a vector corresponding to the non-domainant solution to the recurrence relationship
+is a vector corresponding to the non-domainant solution to the recurrence relationship, for `k = size(data,1)`
 
-r[1] == r1
-r[2] == (A[1]z + B[1])r[1] + μ
-r[k+1] == (A[k]z + B[k])r[k] - C[k]*r[k-1]
+r[1:k,:] == data
+r[k+1,j] == (A[k]z[j] + B[k])r[k,j] - C[k]*r[k-1,j]
 """
 mutable struct RecurrenceArray{T, N, AA<:AbstractVector, BB<:AbstractVector, CC<:AbstractVector} <: AbstractCachedArray{T,N}
     z::T
@@ -40,16 +39,17 @@ function cache_filldata!(K::RecurrenceVector, kr)
     z = K.z
     N = maximum(kr)
     tol = 100N
-    p0, p1 = K.p0[1], K.p1[1]
     if s > 2 && iszero(K.data[s-1]) && iszero(K.data[s])
         # no data
         zero!(view(K.data, s+1:N))
     else
+        p0, p1 = K.p0[1], K.p1[1]
         n = s
-        while abs(p1) < tol && n ≤ N
+        while abs(p1) < tol && n < N
             p1,p0 = _forwardrecurrence_next(n, A, B, C, z, p0, p1),p1
             n += 1
         end
+        K.p0[1], K.p1[1] = p0, p1
         if n > s
             __forwardrecurrence!(K.data, A, B, C, z, s, n)
         end
@@ -69,9 +69,9 @@ function backwardrecurrence!(K, A, B, C, z, n, N)
     u = K.u
     resize!(u, max(length(u), N))
     # we use data as a working vector and do an inplace LU
-    # r[n+1] - (A[n]x + B[n])r[n] + C[n] r[n-1]
+    # r[n+1] - (A[n]z + B[n])r[n] + C[n] r[n-1] == 0
     u[n+1] = -(A[n+1]z + B[n+1])
-    data[n+1] = -C[n]*data[n]
+    data[n+1] = -C[n+1]*data[n]
 
     # forward elimination
     k = n+1
@@ -79,15 +79,15 @@ function backwardrecurrence!(K, A, B, C, z, n, N)
         k ≥ maxiterations && error("maximum iterations reached")
         if k == N
             # need to resize data, lets use rate of decay as estimate
-            μ = abs(data[k]/data[k-1])
+            μ = min(abs(data[k]/data[k-1]), abs(data[k-1]/data[k-2]))
             # data[k] * μ^M ≤ ε
             #  M ≥ log(ε/data[k])/log(μ)
-            N = ceil(Int, max(2N, min(maxiterations, log(eps(T)/100)/log(μ))))
+            N = ceil(Int, max(2N, min(maxiterations, log(eps(real(T))/100)/log(μ))))
             resize!(data, N)
             resize!(u, N)
         end
-        ℓ = -C[k]/u[k]
-        u[k+1] = ℓ-(A[n+1]z + B[n+1])
+        ℓ = -C[k+1]/u[k]
+        u[k+1] = ℓ-(A[k+1]z + B[k+1])
         data[k+1] = ℓ*data[k]
         k += 1
     end
@@ -98,7 +98,10 @@ function backwardrecurrence!(K, A, B, C, z, n, N)
     for κ = k-1:-1:n+1
         data[κ] = (data[κ] - data[κ+1])/u[κ]
     end
-    zero!(view(K.data, k+1:N))
+    
+    for κ = k+1:N
+        data[κ] = 0
+    end
     K.datasize = (max(K.datasize[1],N),)
     K
 end
