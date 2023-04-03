@@ -520,14 +520,35 @@ end
 import LazyArrays: resizedata!, AbstractCachedMatrix
 import ClassicalOrthogonalPolynomials: sqrtx2, _p0
 
-mutable struct RecurrenceArray{T, N, XX<:AbstractMatix} <: AbstractCachedMatrix{T}
-    X::X
+
+
+"""
+    r = RecurrenceArray(z::Number, c, a, b, μ::Number, r1::Number)
+
+is a vector corresponding to the solution to the recurrence relationship
+$$
+r[1] == r1
+(a[1]-z)r[1] + b[1]r[2] == μ,
+c[n-1]r[n-1] + (a[n]-z)r[n] + b[n]r[n+1] == 0
+$$
+"""
+mutable struct RecurrenceArray{T, N, C<:AbstractVector, A<:AbstractVector, B<:AbstractVector, IN} <: AbstractCachedMatrix{T}
+    z::T
+    c::C
+    a::A
+    b::B
     data::AbstractArray{T,N}
     datasize::NTuple{N,Int}
+    u::AbstractVector{T} # used for backsubstitution to store diagonal of U in LU
+    useforward::IN
 end
 
 
-RecurrenceArray(X, data) = RecurrenceArray(X, data, size(data))
+RecurrenceArray(z::Number, X::AbstractMatrix, data::AbstractVector, datasize, u, useforward) = RecurrenceArray(z, X.du, X.d, X.dl, data, datasize, u, useforward)
+RecurrenceArray(z::Number, X, data::AbstractVector{T}) where T = RecurrenceArray(z, X, data, (length(data),), T[], true)
+RecurrenceArray(z::Number, X, μ::Number, r1::Number) = RecurrenceArray(z, X, [r1, (μ - (a[1]-z)*r[1])/b[1]])
+
+
 
 
 size(R::RecurrenceArray{<:Any,1}) = (ℵ₀,) # potential to add maximum size of operator
