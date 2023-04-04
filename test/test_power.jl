@@ -1,5 +1,5 @@
 using SingularIntegrals, ClassicalOrthogonalPolynomials, Test
-using SingularIntegrals: PowerKernelPoint
+using SingularIntegrals: PowerKernelPoint, powerlawmoment, powerlawrecurrence, RecurrenceArray
 
 
 # using HypergeometricFunctions
@@ -14,8 +14,20 @@ using SingularIntegrals: PowerKernelPoint
 @testset "Weights" begin
     z = 10.0
     x = axes(ChebyshevT(),1)
-    L = abs.(z .- x') .^ 0.1
+    α = 0.1
+    L = abs.(z .- x') .^ α
     # from Mathmatica
-    @test L* UltrasphericalWeight(1) ≈ 1.9772924292721128
+    λ = 1
+    L0 = powerlawmoment(Val(0), α, λ, z)
+    L1 = powerlawmoment(Val(1), α, λ, z)
+    @test L* UltrasphericalWeight(λ) ≈ L0  ≈ 1.9772924292721128
+    @test L1 ≈ -0.009901716900034385
+    A, B, C = powerlawrecurrence(α, λ)
+    @test (A[2]z + B[2])*L1-C[2]L0 ≈ -0.00022324029766696007
+    r = RecurrenceArray(z, (A,B,C), [L0,L1])
+    @test r[5] ≈ -2.5742591209035326E-7 
+    @test r[1:10] ≈ (L * Weighted(Ultraspherical(λ)))[1:10]
+
     @test L* LegendreWeight() ≈ 2.517472100701719
+    @test (L * Legendre())[5] ≈ -1.3328397976790363E-7 
 end
