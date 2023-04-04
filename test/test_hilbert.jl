@@ -1,3 +1,5 @@
+using SingularIntegrals, ClassicalOrthogonalPolynomials, Test
+
 @testset "Hilbert" begin
     @testset "weights" begin
         w_T = ChebyshevTWeight()
@@ -124,6 +126,16 @@ end
         @test_throws DimensionMismatch inv.(z .- x') * Weighted(ChebyshevU())
         @test_throws DimensionMismatch inv.(z .- x') * ChebyshevTWeight()
         @test_throws DimensionMismatch inv.(z .- x') * ChebyshevUWeight()
+    end
+
+    @testset "Matrix" begin
+        z = [2.,3.]
+        T = ChebyshevT()
+        wT = Weighted(T)
+        x = axes(wT,1)
+        @test (inv.(z .- x') * wT)[:,1:100] ≈ ([(inv.(z[1] .- x') * wT)[1:100]'; (inv.(z[2] .- x') * wT)[1:100]'])
+        f = wT * (T \ exp.(x))
+        @test inv.(z .- x') * f ≈ [2.8826861116458593, 1.6307809018753612]
     end
 end
 

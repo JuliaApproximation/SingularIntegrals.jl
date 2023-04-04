@@ -5,7 +5,7 @@ using QuasiArrays: AbstractQuasiMatrix, BroadcastQuasiMatrix, LazyQuasiArrayStyl
 import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, Clenshaw, chop, initiateforwardrecurrence
 using LazyBandedMatrices: Tridiagonal, SymTridiagonal, subdiagonaldata, supdiagonaldata, diagonaldata
 import LazyArrays: AbstractCachedMatrix, AbstractCachedArray, paddeddata, arguments, resizedata!, cache_filldata!, zero!, cacheddata
-import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy
+import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy, tail
 import LinearAlgebra: dot
 using BandedMatrices: _BandedMatrix
 using FastTransforms: _forwardrecurrence!, _forwardrecurrence_next
@@ -20,7 +20,7 @@ include("power.jl")
 
 
 ### generic fallback
-for Op in (:Hilbert, :StieltjesPoint, :LogKernelPoint, :PowKernelPoint, :LogKernel, :PowKernel)
+for Op in (:Hilbert, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :LogKernel)
     @eval begin
         @simplify function *(H::$Op, wP::WeightedBasis{<:Any,<:Weight,<:Any})
             w,P = wP.args
