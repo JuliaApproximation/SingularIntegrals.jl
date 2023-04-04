@@ -6,8 +6,8 @@ is a vector corresponding to the non-domainant solution to the recurrence relati
 r[1:k,:] == data
 r[k+1,j] == (A[k]z[j] + B[k])r[k,j] - C[k]*r[k-1,j]
 """
-mutable struct RecurrenceArray{T, N, AA<:AbstractVector, BB<:AbstractVector, CC<:AbstractVector} <: AbstractCachedArray{T,N}
-    z::T
+mutable struct RecurrenceArray{T, N, ZZ, AA<:AbstractVector, BB<:AbstractVector, CC<:AbstractVector} <: AbstractCachedArray{T,N}
+    z::ZZ
     A::AA
     B::BB
     C::CC
@@ -18,13 +18,23 @@ mutable struct RecurrenceArray{T, N, AA<:AbstractVector, BB<:AbstractVector, CC<
     u::Vector{T} # used for backsubstitution to store diagonal of U in LU
 end
 
-const RecurrenceVector{T, A<:AbstractVector, B<:AbstractVector, C<:AbstractVector} = RecurrenceArray{T, 1, A, B, C}
-const RecurrenceMatrix{T, A<:AbstractVector, B<:AbstractVector, C<:AbstractVector} = RecurrenceArray{T, 2, A, B, C}
+const RecurrenceVector{T, A<:AbstractVector, B<:AbstractVector, C<:AbstractVector} = RecurrenceArray{T, 1, T, A, B, C}
+const RecurrenceMatrix{T, Z<:AbstractVector, A<:AbstractVector, B<:AbstractVector, C<:AbstractVector} = RecurrenceArray{T, 2, Z, A, B, C}
 
 function RecurrenceArray(z::Number, (A,B,C), data::AbstractVector{T}) where T
     N = length(data)
     p0, p1 = initiateforwardrecurrence(N, A, B, C, z, one(z))
-    RecurrenceVector{T,typeof(A),typeof(B),typeof(C)}(z, A, B, C, data, (length(data),), T[p0], T[p1], T[])
+    RecurrenceVector{T,typeof(A),typeof(B),typeof(C)}(z, A, B, C, data, size(data), T[p0], T[p1], T[])
+end
+
+function RecurrenceArray(z::AbstractVector, (A,B,C), data::AbstractMatrix{T}) where T
+    M,N = size(data)
+    p0 = Vector{T}(undef, N)
+    p1 = Vector{T}(undef, N)
+    for j = 1:length(z)
+        p0[j], p1[j] = initiateforwardrecurrence(N, A, B, C, z[j], one(z))
+    end
+    RecurrenceMatrix{T,typeof(z),typeof(A),typeof(B),typeof(C)}(z, A, B, C, data, size(data), p0, p1, T[])
 end
 
 size(R::RecurrenceVector) = (ℵ₀,) # potential to add maximum size of operator
@@ -33,32 +43,43 @@ copy(R::RecurrenceArray) = R # immutable entries
 
 # to estimate error in forward recurrence we compute the dominant solution (the OPs) simeultaneously
 
-function cache_filldata!(K::RecurrenceVector, kr)
-    s = K.datasize[1]
-    A,B,C = K.A,K.B,K.C
-    z = K.z
-    N = maximum(kr)
-    tol = 100
-    if s > 2 && iszero(K.data[s-1]) && iszero(K.data[s])
-        # no data
-        zero!(view(K.data, s+1:N))
-    else
-        p0, p1 = K.p0[1], K.p1[1]
-        n = s
-        while abs(p1) < tol*n && n < N
-            p1,p0 = _forwardrecurrence_next(n, A, B, C, z, p0, p1),p1
-            n += 1
-        end
-        K.p0[1], K.p1[1] = p0, p1
-        if n > s
-            _forwardrecurrence!(K.data, A, B, C, z, s:n)
-        end
-        if n < N
-            backwardrecurrence!(K, A, B, C, z, n, N)
-        end
-    end
+function resizedata!(K::RecurrenceVector, n)
+    n ≤ 0 && return K
+    @boundscheck checkbounds(Bool, K, n) || throw(ArgumentError("Cannot resize beyond size of operator"))
 
-    K.datasize = (max(K.datasize[1],N),)
+    # increase size of array if necessary
+    olddata = cacheddata(K)
+    ν, = K.datasize
+    n = max(ν,n)
+    if n > length(K.data) # double memory to avoid O(n^2) growing
+        K.data = similar(K.data, min(2n,length(K)))
+        K.data[axes(olddata,1)] = olddata
+    end
+    if n > ν
+        A,B,C = K.A,K.B,K.C
+        z = K.z
+        tol = 100
+        if ν > 2 && iszero(K.data[ν-1]) && iszero(K.data[ν])
+            # no data
+            zero!(view(K.data, ν+1:n))
+        else
+            p0, p1 = K.p0[1], K.p1[1]
+            k = ν
+            while abs(p1) < tol*k && k < n
+                p1,p0 = _forwardrecurrence_next(k, A, B, C, z, p0, p1),p1
+                k += 1
+            end
+            K.p0[1], K.p1[1] = p0, p1
+            if k > ν
+                _forwardrecurrence!(K.data, A, B, C, z, ν:k)
+            end
+            if k < n
+                backwardrecurrence!(K, A, B, C, z, k, n)
+            end
+        end
+
+        K.datasize = (max(K.datasize[1],n),)
+    end
 end
 
 function backwardrecurrence!(K, A, B, C, z, n, N)

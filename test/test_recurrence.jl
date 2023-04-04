@@ -28,6 +28,6 @@ using ClassicalOrthogonalPolynomials: recurrencecoefficients
         U = ChebyshevU()
         z = [2.,3.]
         ξ = @. inv(z + sign(z)sqrt(z^2-1))
-        r = RecurrenceArray(z, recurrencecoefficients(U), [ξ'; ξ'.^2])
+        # r = RecurrenceArray(z, recurrencecoefficients(U), [ξ'; ξ'.^2])
     end
 end
