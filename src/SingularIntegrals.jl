@@ -15,6 +15,7 @@ export associated
 
 include("recurrence.jl")
 include("stieltjes.jl")
+include("logkernel.jl")
 include("power.jl")
 
 
