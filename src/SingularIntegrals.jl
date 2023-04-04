@@ -8,7 +8,7 @@ import LazyArrays: AbstractCachedMatrix, AbstractCachedArray, paddeddata, argume
 import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy
 import LinearAlgebra: dot
 using BandedMatrices: _BandedMatrix
-using FastTransforms: __forwardrecurrence!, _forwardrecurrence_next
+using FastTransforms: _forwardrecurrence!, _forwardrecurrence_next
 
 export associated
 

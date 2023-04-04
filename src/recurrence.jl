@@ -51,7 +51,7 @@ function cache_filldata!(K::RecurrenceVector, kr)
         end
         K.p0[1], K.p1[1] = p0, p1
         if n > s
-            __forwardrecurrence!(K.data, A, B, C, z, s, n)
+            _forwardrecurrence!(K.data, A, B, C, z, s:n)
         end
         if n < N
             backwardrecurrence!(K, A, B, C, z, n, N)
