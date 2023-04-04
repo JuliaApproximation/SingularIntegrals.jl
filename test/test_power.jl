@@ -26,7 +26,7 @@ using SingularIntegrals: PowerKernelPoint, powerlawmoment, powerlawrecurrence, R
     @test (A[2]z + B[2])*L1-C[2]L0 ≈ -0.00022324029766696007
     r = RecurrenceArray(z, (A,B,C), [L0,L1])
     @test r[5] ≈ -2.5742591209035326E-7 
-    @test r[1:10] ≈ (L * Weighted(Ultraspherical(λ)))[1:10]
+    @test r[1:10] ≈ (L * Weighted(Ultraspherical(λ)))[1,1:10]
 
     @test L* LegendreWeight() ≈ 2.517472100701719
     @test (L * Legendre())[5] ≈ -1.3328397976790363E-7 

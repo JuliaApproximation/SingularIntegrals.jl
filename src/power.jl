@@ -42,7 +42,7 @@ end
     cnv,α = K.args
     z,x = cnv.args[1].args
     λ = wC.P.λ
-    RecurrenceArray(z, powerlawrecurrence(α, λ), [powerlawmoment(Val(0), α, λ, z), powerlawmoment(Val(1), α, λ, z)])
+    transpose(RecurrenceArray(z, powerlawrecurrence(α, λ), [powerlawmoment(Val(0), α, λ, z), powerlawmoment(Val(1), α, λ, z)]))
 end
 
 @simplify function *(K::PowerKernelPoint{<:Any,<:Number,<:Any,<:ChebyshevInterval,<:Number}, wC::Legendre)
