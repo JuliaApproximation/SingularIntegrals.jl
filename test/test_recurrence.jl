@@ -26,8 +26,11 @@ using ClassicalOrthogonalPolynomials: recurrencecoefficients
 
     @testset "RecurrenceMatrix" begin
         U = ChebyshevU()
-        z = [2.,3.]
+        z = [2.,3.,100.]
         ξ = @. inv(z + sign(z)sqrt(z^2-1))
-        # r = RecurrenceArray(z, recurrencecoefficients(U), [ξ'; ξ'.^2])
+        r = RecurrenceArray(z, recurrencecoefficients(U), [ξ'; ξ'.^2])
+        @test r[1:100,:] ≈ [RecurrenceArray(z[j], recurrencecoefficients(U),  [ξ[j],ξ[j]^2])[k] for k=1:100, j=axes(z,1)]
+        @test r[1:100,:] ≈ r[1:100,1:3] ≈ r[collect(1:100),1:3] ≈ r[1:100,collect(1:3)] ≈ r[collect(1:100),:]
+        @test r[100,:] ≈ r[100,1:3]
     end
 end
