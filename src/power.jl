@@ -20,7 +20,7 @@ end
 
 function powerlawmoment(::Val{1}, α, λ, z::Real)
     T = promote_type(typeof(α), typeof(λ), typeof(z))
-    -sign(z)sqrt(convert(T,π))α*λ*gamma(λ+one(T)/2)abs(z)^(α-1)*_₂F₁((1-α)/2, 1-α/2, 2+λ, 1/z^2)/gamma(2+λ)
+    -sign(z)α*λ*beta(one(T)/2, λ+one(T)/2)*abs(z)^(α-1)*_₂F₁((1-α)/2, 1-α/2, 2+λ, 1/z^2)/(1+λ)
 end
 
 
