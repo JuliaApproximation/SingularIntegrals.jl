@@ -9,12 +9,16 @@ const PowerKernelPoint{T,W<:Number,V,D,A<:Number} = BroadcastQuasiMatrix{T,typeo
 ###
 
 
-function powerlawmoment(::Val{0}, α, λ, z)
+function powerlawmoment(::Val{0}, α, λ, z::Real)
     T = promote_type(typeof(α), typeof(λ), typeof(z))
-    sqrt(convert(T,π))gamma(λ+one(T)/2)abs(z)^α*_₂F₁((1-α)/2, -α/2, 1+λ, 1/z^2)/gamma(1+λ)
+    if -1 ≤ z ≤ 1
+        beta((α+one(T))/2, λ+one(T)/2)_₂F₁(-α/2, -λ-α/2, one(T)/2, z^2)
+    else
+        beta(one(T)/2, λ+one(T)/2)abs(z)^α*_₂F₁((1-α)/2, -α/2, 1+λ, 1/z^2)
+    end
 end
 
-function powerlawmoment(::Val{1}, α, λ, z)
+function powerlawmoment(::Val{1}, α, λ, z::Real)
     T = promote_type(typeof(α), typeof(λ), typeof(z))
     -sign(z)sqrt(convert(T,π))α*λ*gamma(λ+one(T)/2)abs(z)^(α-1)*_₂F₁((1-α)/2, 1-α/2, 2+λ, 1/z^2)/gamma(2+λ)
 end
