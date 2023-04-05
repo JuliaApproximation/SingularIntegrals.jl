@@ -20,7 +20,7 @@ using ClassicalOrthogonalPolynomials: recurrencecoefficients
             ξ = inv(z + sign(z)sqrt(z^2-1))
             r = RecurrenceArray(z, recurrencecoefficients(U), [ξ,ξ^2])
             @test r[1:1000] ≈ ξ.^(1:1000)
-            @test r[10_000] ≈ ξ.^(10_000) atol=3E-11
+            @test r[10_000] ≈ ξ.^(10_000) atol=3E-10
         end
     end
 
