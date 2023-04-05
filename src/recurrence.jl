@@ -42,15 +42,6 @@ size(R::RecurrenceMatrix) = (ℵ₀, size(R.data,2)) # potential to add maximum 
 copy(R::RecurrenceArray) = R # immutable entries
 
 
-function _growdata!(B::AbstractVector, n::Integer)
-    # increase size of array if necessary
-    olddata = cacheddata(B)
-    ν, = B.datasize
-    n = max(ν,n)
-    if n > length(B.data) # double memory to avoid O(n^2) growing
-        resize!(B.data, min(n,length(B)))
-    end
-end
 
 function _growdata!(B::AbstractArray{<:Any,N}, nm::Vararg{Integer,N}) where N
     # increase size of array if necessary
