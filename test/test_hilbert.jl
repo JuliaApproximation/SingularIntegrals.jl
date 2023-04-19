@@ -273,6 +273,17 @@ end
         @test inv.(t .- x')*f ≈ -2.797995066227555
         @test log.(abs.(t .- x'))*f ≈ -5.9907385495482821485
     end
+
+    @testset "Laguerre" begin
+        x = axes(Laguerre(), 1)
+        @test (inv.(x .- x') * LaguerreWeight())[0.1] ≈ exp(-0.1)*expinti(0.1)
+        @test (inv.(x .- x') * LaguerreWeight(-0.5))[0.1] ≈ 3.3177694149902   # Mathematica
+        @test (inv.(x .- x') * LaguerreWeight(-0.5))[2.1] ≈ 1.08294830124810  # Mathematica
+        @test (inv.(x .- x') * LaguerreWeight(0.5))[0.1]  ≈ -1.44067690942561 # Mathematica
+        @test (inv.(x .- x') * LaguerreWeight(0.5))[2.1]  ≈ 0.501737581714500 # Mathematica
+        @test (inv.(x .- x') * LaguerreWeight(3.5))[0.1]  ≈ -3.46658795669242 # Mathematica
+        @test (inv.(x .- x') * LaguerreWeight(3.5))[2.1]  ≈ -5.37663478253357 # Mathematica
+    end
 end
 
 @testset "three-interval" begin
