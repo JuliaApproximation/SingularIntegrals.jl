@@ -47,6 +47,16 @@ end
 
 end
 
+@simplify function *(L::LogKernelPoint, P::Legendre)
+    T = promote_type(eltype(L), eltype(P))
+    z, xc = parent(L).args[1].args[1].args
+    @assert z > 1
+    r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
+    r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
+    r2 = z*r1 + 2*one(T)/3
+    transpose(RecurrenceArray(z, ((one(T):2:∞)./(2:∞), Zeros{T}(∞), (-one(T):∞)./(2:∞)), [r0,r1,r2]))
+end
+
 
 @simplify function *(L::LogKernelPoint, wT::SubQuasiArray{<:Any,2,<:Any,<:Tuple{<:AbstractAffineQuasiVector,<:Any}})
     P = parent(wT)
