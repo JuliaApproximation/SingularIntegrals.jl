@@ -1,6 +1,25 @@
 using SingularIntegrals, ClassicalOrthogonalPolynomials, FillArrays, Test
 import SingularIntegrals: RecurrenceArray
 
+@testset "ComplexLogKernelPoint" begin
+
+    P = Legendre()
+    Pc = Legendre{ComplexF64}()
+    x = axes(P,1)
+
+
+    L = (z,k) -> sum(Pc / Pc \ (log.(z .- x).*P[:,k+1]))
+
+    for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im)
+        @test (log.(z .- x') * P)[1:5] ≈ L.(z, 0:4)
+    end
+    
+    for z in (-5,-1,0,0.1)
+        @test_throws DomainError log.(z .- x') * P
+    end
+
+end
+
 @testset "LogKernelPoint" begin
     @testset "Complex point" begin
         wU = Weighted(ChebyshevU())
@@ -44,9 +63,11 @@ import SingularIntegrals: RecurrenceArray
         P = Legendre()
         x = axes(P,1)
 
-        L = k -> sum(P / P \ (log.(z .- x).*P[:,k+1]))
+        L = (z,k) -> sum(P / P \ (log.(abs.(z .- x)).*P[:,k+1]))
 
-        @test (log.(abs.(z .- x')) * P)[1:5] ≈ L.(0:4)
+        for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im, -3)
+            @test (log.(abs.(z .- x')) * P)[1:5] ≈ L.(z, 0:4)
+        end
 
         @testset "derivation" begin
             W = Weighted(Jacobi(1,1))
