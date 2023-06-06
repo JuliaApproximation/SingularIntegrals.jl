@@ -71,19 +71,21 @@ end
 
         @testset "derivation" begin
             W = Weighted(Jacobi(1,1))
-            
-            @test L(0) ≈ 2log(z+1) + inv.(z .- x') * (P / P \ (x .- 1)) ≈ (1 + z)log(1 + z) - (z-1)log(z-1) - 2
-            @test L(1) ≈ (inv.(z .- x') * W)[1]/(-2)
 
-            @test z * L(0) ≈ 2z*log(z+1) + z*(inv.(z .- x') * (P / P \ (x .- 1))) ≈
+            z = 5
+            
+            @test L(z,0) ≈ 2log(z+1) + inv.(z .- x') * (P / P \ (x .- 1)) ≈ (1 + z)log(1 + z) - (z-1)log(z-1) - 2
+            @test L(z,1) ≈ (inv.(z .- x') * W)[1]/(-2)
+
+            @test z * L(z,0) ≈ 2z*log(z+1) + z*(inv.(z .- x') * (P / P \ (x .- 1))) ≈
                         2z*log(z+1) + (inv.(z .- x') * (P / P \ (x.^2 .- 1))) + (inv.(z .- x') * (P / P \ (1 .- x))) - 2 ≈
-                        2L(1) - L(0) + 2(z+1)*log(z+1) - 2
-            @test z * L(1) ≈ z * (inv.(z .- x') * W)[1]/(-2) ≈ -2/3 + (inv.(z .- x') * (x .* W))[1]/(-2) ≈
-                        -2/3 + (inv.(z .- x') * W)[2]/(-4) ≈ -2/3 + L(2)
+                        2L(z,1) - L(z,0) + 2(z+1)*log(z+1) - 2
+            @test z * L(z,1) ≈ z * (inv.(z .- x') * W)[1]/(-2) ≈ -2/3 + (inv.(z .- x') * (x .* W))[1]/(-2) ≈
+                        -2/3 + (inv.(z .- x') * W)[2]/(-4) ≈ -2/3 + L(z,2)
 
             for k = 2:5
-                @test z * L(k) ≈ (k-1)/(2k+1)*L(k-1)+ (k+2)/(2k+1)*L(k+1)
-                @test (2k+1)/(k+2)*z * L(k) ≈ (k-1)/(k+2)*L(k-1)+ L(k+1)
+                @test z * L(z,k) ≈ (k-1)/(2k+1)*L(z,k-1)+ (k+2)/(2k+1)*L(z,k+1)
+                @test (2k+1)/(k+2)*z * L(z,k) ≈ (k-1)/(k+2)*L(z,k-1)+ L(z,k+1)
             end
 
             r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2
