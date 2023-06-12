@@ -92,7 +92,7 @@ end
             r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
             r2 = z*r1 + 2*one(z)/3
             r = RecurrenceArray(z, ((1:2:∞)./(2:∞), Zeros(∞), (-1:∞)./(2:∞)), [r0,r1,r2])
-            @test r[1:10] ≈ L.(0:9)
+            @test r[1:10] ≈ L.(z,0:9)
         end
     end
 end
