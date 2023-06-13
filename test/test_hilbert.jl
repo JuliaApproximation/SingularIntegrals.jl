@@ -1,4 +1,5 @@
 using SingularIntegrals, ClassicalOrthogonalPolynomials, Test
+using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, paddeddata
 
 @testset "Hilbert" begin
     @testset "weights" begin
