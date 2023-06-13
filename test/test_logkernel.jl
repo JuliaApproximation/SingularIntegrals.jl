@@ -1,3 +1,25 @@
+using SingularIntegrals, ClassicalOrthogonalPolynomials, FillArrays, Test
+import SingularIntegrals: RecurrenceArray
+
+@testset "ComplexLogKernelPoint" begin
+
+    P = Legendre()
+    Pc = Legendre{ComplexF64}()
+    x = axes(P,1)
+
+
+    L = (z,k) -> sum(Pc / Pc \ (log.(z .- x).*P[:,k+1]))
+
+    for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im)
+        @test (log.(z .- x') * P)[1:5] ≈ L.(z, 0:4)
+    end
+    
+    for z in (-5,-1,0,0.1)
+        @test_throws DomainError log.(z .- x') * P
+    end
+
+end
+
 @testset "LogKernelPoint" begin
     @testset "Complex point" begin
         wU = Weighted(ChebyshevU())
@@ -34,6 +56,44 @@
         wU = Weighted(chebyshevu(1..2))
         f = wU / wU \ @.(sqrt(2-x)sqrt(x-1)exp(x))
         @test L*f ≈ 2.2374312398976586 # MAthematica
+    end
+
+    @testset "Legendre" begin
+        z = 5
+        P = Legendre()
+        x = axes(P,1)
+
+        L = (z,k) -> sum(P / P \ (log.(abs.(z .- x)).*P[:,k+1]))
+
+        for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im, -3)
+            @test (log.(abs.(z .- x')) * P)[1:5] ≈ L.(z, 0:4)
+        end
+
+        @testset "derivation" begin
+            W = Weighted(Jacobi(1,1))
+
+            z = 5
+            
+            @test L(z,0) ≈ 2log(z+1) + inv.(z .- x') * (P / P \ (x .- 1)) ≈ (1 + z)log(1 + z) - (z-1)log(z-1) - 2
+            @test L(z,1) ≈ (inv.(z .- x') * W)[1]/(-2)
+
+            @test z * L(z,0) ≈ 2z*log(z+1) + z*(inv.(z .- x') * (P / P \ (x .- 1))) ≈
+                        2z*log(z+1) + (inv.(z .- x') * (P / P \ (x.^2 .- 1))) + (inv.(z .- x') * (P / P \ (1 .- x))) - 2 ≈
+                        2L(z,1) - L(z,0) + 2(z+1)*log(z+1) - 2
+            @test z * L(z,1) ≈ z * (inv.(z .- x') * W)[1]/(-2) ≈ -2/3 + (inv.(z .- x') * (x .* W))[1]/(-2) ≈
+                        -2/3 + (inv.(z .- x') * W)[2]/(-4) ≈ -2/3 + L(z,2)
+
+            for k = 2:5
+                @test z * L(z,k) ≈ (k-1)/(2k+1)*L(z,k-1)+ (k+2)/(2k+1)*L(z,k+1)
+                @test (2k+1)/(k+2)*z * L(z,k) ≈ (k-1)/(k+2)*L(z,k-1)+ L(z,k+1)
+            end
+
+            r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2
+            r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
+            r2 = z*r1 + 2*one(z)/3
+            r = RecurrenceArray(z, ((1:2:∞)./(2:∞), Zeros(∞), (-1:∞)./(2:∞)), [r0,r1,r2])
+            @test r[1:10] ≈ L.(z,0:9)
+        end
     end
 end
 

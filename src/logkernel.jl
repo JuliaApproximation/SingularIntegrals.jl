@@ -1,3 +1,4 @@
+const ComplexLogKernelPoint{T,C,W<:Number,V,D} = BroadcastQuasiMatrix{T,typeof(log),Tuple{ConvKernel{C,W,V,D}}}
 const LogKernelPoint{T<:Real,C,W<:Number,V,D} = BroadcastQuasiMatrix{T,typeof(log),Tuple{BroadcastQuasiMatrix{T,typeof(abs),Tuple{ConvKernel{C,W,V,D}}}}}
 const LogKernel{T,D1,D2} = BroadcastQuasiMatrix{T,typeof(log),Tuple{BroadcastQuasiMatrix{T,typeof(abs),Tuple{ConvKernel{T,Inclusion{T,D1},T,D2}}}}}
 
@@ -46,6 +47,26 @@ end
     end
 
 end
+
+@simplify function *(L::ComplexLogKernelPoint, P::Legendre)
+    T = promote_type(eltype(L), eltype(P))
+    z, xc = parent(L).args[1].args
+    r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
+    r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
+    r2 = z*r1 + 2*one(T)/3
+    transpose(RecurrenceArray(z, ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞)), [r0,r1,r2]))
+end
+
+@simplify function *(L::LogKernelPoint, P::Legendre)
+    T = promote_type(eltype(L), eltype(P))
+    z, x = parent(L).args[1].args[1].args
+    real.(log.(complex(z) .- x) * P)
+end
+
+
+###
+# Maps
+###
 
 
 @simplify function *(L::LogKernelPoint, wT::SubQuasiArray{<:Any,2,<:Any,<:Tuple{<:AbstractAffineQuasiVector,<:Any}})
