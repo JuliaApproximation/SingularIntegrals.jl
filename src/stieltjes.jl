@@ -196,6 +196,11 @@ end
     transpose(RecurrenceArray(z, (A,B,C), data))
 end
 
+@simplify function *(S::StieltjesPoints, P::Legendre)
+    S * Weighted(P)
+end
+
+
 
 ##
 # mapped

@@ -138,6 +138,13 @@ end
         f = wT * (T \ exp.(x))
         @test inv.(z .- x') * f ≈ [2.8826861116458593, 1.6307809018753612]
     end
+
+    @testset "StieltjesPoints Legendre" begin
+        z = [2.,3.]
+        P = Legendre()
+        x = axes(P,1)
+        @test (inv.(z .- x') * P)[:,1:5] ≈ [(inv.(2 .- x')*P)[1:5]'; (inv.(3 .- x')*P)[1:5]']
+    end
 end
 
 
