@@ -59,14 +59,20 @@ end
     end
 
     @testset "Legendre" begin
-        z = 5
         P = Legendre()
         x = axes(P,1)
 
         L = (z,k) -> sum(P / P \ (log.(abs.(z .- x)).*P[:,k+1]))
 
         for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im, -3)
-            @test (log.(abs.(z .- x')) * P)[1:5] ≈ L.(z, 0:4)
+            @test (log.(abs.(z .- x')) * P)[1:10] ≈ L.(z, 0:9)
+        end
+
+        @testset "BigFloat" begin
+            z = big(5.0)
+            P = Legendre{BigFloat}()
+            x = axes(P,1)
+            @test (log.(abs.(z .- x')) * P)[1:10] ≈ L.(z, 0:9)
         end
 
         @testset "derivation" begin
