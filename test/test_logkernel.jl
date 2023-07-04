@@ -59,19 +59,29 @@ end
     end
 
     @testset "Legendre" begin
-        z = 5
-        P = Legendre()
-        x = axes(P,1)
+        @testset "Float64" begin
+            P = Legendre()
+            x = axes(P,1)
+            L = (z,k) -> sum(P / P \ (log.(abs.(z .- x)).*P[:,k+1]))
 
-        L = (z,k) -> sum(P / P \ (log.(abs.(z .- x)).*P[:,k+1]))
+            for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im, -3)
+                @test (log.(abs.(z .- x')) * P)[1:10] ≈ L.(z, 0:9)
+            end
+        end
 
-        for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im, -3)
-            @test (log.(abs.(z .- x')) * P)[1:5] ≈ L.(z, 0:4)
+        @testset "BigFloat" begin
+            z = big(5.0)
+            P = Legendre{BigFloat}()
+            x = axes(P,1)
+            L = (z,k) -> sum(P / P \ (log.(abs.(z .- x)).*P[:,k+1]))
+            @test (log.(abs.(z .- x')) * P)[1:10] ≈ L.(z, 0:9)
         end
 
         @testset "derivation" begin
             W = Weighted(Jacobi(1,1))
-
+            P = Legendre()
+            x = axes(P,1)
+            L = (z,k) -> sum(P / P \ (log.(abs.(z .- x)).*P[:,k+1]))
             z = 5
             
             @test L(z,0) ≈ 2log(z+1) + inv.(z .- x') * (P / P \ (x .- 1)) ≈ (1 + z)log(1 + z) - (z-1)log(z-1) - 2

@@ -99,7 +99,7 @@ end
 function backwardrecurrence!(K, A, B, C, z, nN::AbstractUnitRange, j...)
     n,N = first(nN),last(nN)
     T = eltype(z)
-    tol = 1E-14
+    tol = 100eps(real(T))
     maxiterations = 100_000_000
     data = K.data
     u = K.u
