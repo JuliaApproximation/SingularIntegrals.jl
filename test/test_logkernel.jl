@@ -77,7 +77,7 @@ end
 
         @testset "derivation" begin
             W = Weighted(Jacobi(1,1))
-
+            P = Legendre()
             z = 5
             
             @test L(z,0) ≈ 2log(z+1) + inv.(z .- x') * (P / P \ (x .- 1)) ≈ (1 + z)log(1 + z) - (z-1)log(z-1) - 2
