@@ -7,20 +7,25 @@ const LogKernel{T,D1,D2} = BroadcastQuasiMatrix{T,typeof(log),Tuple{BroadcastQua
 # LogKernel
 ###
 
-@simplify function *(L::LogKernel{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, wT::Weighted{<:Any,<:ChebyshevT})
-    T = promote_type(eltype(L), eltype(wT))
-    ChebyshevT{T}() * Diagonal(Vcat(-convert(T,π)*log(2*one(T)),-convert(T,π)./(1:∞)))
-end
+@simplify *(L::LogKernel, P::AbstractQuasiMatrix) = logkernel(P)*π
 
-@simplify function *(H::LogKernel, wT::Weighted{<:Any,<:SubQuasiArray{<:Any,2,<:ChebyshevT,<:Tuple{AbstractAffineQuasiVector,Slice}}})
-    V = promote_type(eltype(H), eltype(wT))
+"""
+    logkernel(P)
+
+applies the log kernel log(x-t)/π to the columns of a quasi matrix, i.e., `(log.(x - x') * P)/π`
+"""
+logkernel(P, z...) = logkernel_layout(MemoryLayout(P), P, z...)
+logkernel_layout(lay, P, z...) = error("not implemented")
+
+logkernel(wT::Weighted{T,<:ChebyshevT}) where T = ChebyshevT{T}() * Diagonal(Vcat(-log(2*one(T)),inv.(-(1:∞))))
+function logkernel_layout(::MappedBasisLayout, wT::SubQuasiArray{V,2}) where V
     kr,jr = parentindices(wT.P)
-    @assert axes(H,1) == axes(H,2) == axes(wT,1)
+    @assert kr isa AbstractAffineQuasiVector
     T = parent(wT.P)
     x = axes(T,1)
     W = Weighted(T)
     A = kr.A
-    T[kr,:] * Diagonal(Vcat(-convert(V,π)*(log(2*one(V))+log(abs(A)))/A,-convert(V,π)./(A * (1:∞))))
+    T[kr,:] * Diagonal(Vcat(-(log(2*one(V))+log(abs(A)))/A,-inv.(A * (1:∞))))
 end
 
 
@@ -29,28 +34,34 @@ end
 # LogKernelPoint
 ####
 
-@simplify function *(L::LogKernelPoint, wP::Weighted{<:Any,<:ChebyshevU})
-    T = promote_type(eltype(L), eltype(wP))
+@simplify function *(L::LogKernelPoint, P::AbstractQuasiMatrix)
     z, xc = parent(L).args[1].args[1].args
+    logkernel(P, z)*π
+end
+
+@simplify function *(L::ComplexLogKernelPoint, P::AbstractQuasiMatrix)
+    z, xc = parent(L).args[1].args[1].args
+    complexlogkernel(P, z)*π
+end
+
+function logkernel(wP::Weighted{T,<:ChebyshevU}, z) where T
     if z in axes(wP,1)
-        Tn = Vcat(convert(T,π)*log(2*one(T)), convert(T,π)*ChebyshevT{T}()[z,2:end]./oneto(∞))
+        Tn = Vcat(log(2*one(T)), ChebyshevT{T}()[z,2:end]./oneto(∞))
         return transpose((Tn[3:end]-Tn[1:end])/2)
     else
         # for U_k where k>=1
         ξ = inv(z + sqrtx2(z))
-        ζ = (convert(T,π)*ξ.^oneto(∞))./oneto(∞)
+        ζ = ξ.^oneto(∞) ./ oneto(∞)
         ζ = (ζ[3:end]- ζ[1:end])/2
 
         # for U_0
-        ζ = Vcat(convert(T,π)*(ξ^2/4 - (log.(abs.(ξ)) + log(2*one(T)))/2), ζ)
+        ζ = Vcat(ξ^2/4 - (log.(abs.(ξ)) + log(2*one(T)))/2, ζ)
         return transpose(ζ)
     end
 
 end
 
-@simplify function *(L::ComplexLogKernelPoint, P::Legendre)
-    T = promote_type(eltype(L), eltype(P))
-    z, xc = parent(L).args[1].args
+@simplify function complexlogkernel(P::Legendre{T}, z) where T
     r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
     r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
     r2 = z*r1 + 2*one(T)/3
