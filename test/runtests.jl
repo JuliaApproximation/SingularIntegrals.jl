@@ -1,5 +1,5 @@
 using SingularIntegrals, ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, BandedMatrices, LinearAlgebra, Test
-using SingularIntegrals: Hilbert, StieltjesPoint, ChebyshevInterval, associated, Associated,
+using SingularIntegrals: Stieltjes, StieltjesPoint, ChebyshevInterval, associated, Associated,
         orthogonalityweight, Weighted, *, dot, LogKernelPoint
 using LazyArrays: MemoryLayout, PaddedLayout, colsupport, rowsupport, paddeddata
 using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths
@@ -28,3 +28,4 @@ end
 include("test_hilbert.jl")
 include("test_logkernel.jl")
 include("test_power.jl")
+include("test_piecewise.jl")

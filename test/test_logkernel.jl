@@ -1,5 +1,6 @@
 using SingularIntegrals, ClassicalOrthogonalPolynomials, FillArrays, Test
-import SingularIntegrals: RecurrenceArray
+using SingularIntegrals: RecurrenceArray
+using ClassicalOrthogonalPolynomials: affine
 
 @testset "ComplexLogKernelPoint" begin
 

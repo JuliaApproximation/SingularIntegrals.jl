@@ -4,6 +4,14 @@ const PowerKernel{T,D1,D2,F<:Real} = BroadcastQuasiMatrix{T,typeof(^),Tuple{Broa
 const PowerKernelPoint{T,W<:Number,V,D,A<:Number} = BroadcastQuasiMatrix{T,typeof(^),Tuple{BroadcastQuasiMatrix{T,typeof(abs),Tuple{ConvKernel{T,W,V,D}}},A}}
 
 
+
+@simplify function *(K::PowerKernelPoint, wC::AbstractQuasiVecOrMat)
+    T = promote_type(eltype(K), eltype(wC))
+    cnv,α = K.args
+    z,x = cnv.args[1].args
+    powerkernel(convert(AbstractQuasiArray{T}, wC), α, z)
+end
+
 ###
 # PowerKernel
 ###
@@ -28,13 +36,8 @@ function powerlawmoment(::Val{1}, α, λ, z::Real)
 end
 
 
-function *(K::PowerKernelPoint{<:Any,<:Number,<:Any,<:ChebyshevInterval,<:Number}, wC::UltrasphericalWeight)
-    abscnv,α = K.args
-    z,x = abscnv.args[1].args
-    powerlawmoment(Val(0), α, wC.λ, z)
-end
-
-*(K::PowerKernelPoint{<:Any,<:Number,<:Any,<:ChebyshevInterval,<:Number}, wC::LegendreWeight) = K * UltrasphericalWeight(wC)
+powerkernel(wC::UltrasphericalWeight, α, z) = powerlawmoment(Val(0), α, wC.λ, z)
+powerkernel(wC::LegendreWeight, α, z) = powerkernel(UltrasphericalWeight(wC), α, z)
 
 function powerlawrecurrence(α, λ)
     T = promote_type(typeof(α), typeof(λ))
@@ -45,16 +48,10 @@ function powerlawrecurrence(α, λ)
     A,B,C
 end
 
-@simplify function *(K::PowerKernelPoint{<:Any,<:Number,<:Any,<:ChebyshevInterval,<:Number}, wC::Weighted)
-    T = promote_type(eltype(K), eltype(wC))
-    cnv,α = K.args
-    z,x = cnv.args[1].args
+powerkernel(wC::Legendre{T}, α, z) where T = powerkernel(Weighted(Ultraspherical{T}(one(T)/2)), α, z)
+function powerkernel(wC::Weighted, α, z)
     λ = wC.P.λ
     transpose(RecurrenceArray(z, powerlawrecurrence(α, λ), [powerlawmoment(Val(0), α, λ, z), powerlawmoment(Val(1), α, λ, z)]))
 end
 
-@simplify function *(K::PowerKernelPoint{<:Any,<:Number,<:Any,<:ChebyshevInterval,<:Number}, wC::Legendre)
-    T = eltype(wC)
-    K * Weighted(Ultraspherical{T}(one(T)/2))
-end
 
