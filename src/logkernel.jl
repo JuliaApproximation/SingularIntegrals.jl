@@ -7,25 +7,26 @@ const LogKernel{T,D1,D2} = BroadcastQuasiMatrix{T,typeof(log),Tuple{BroadcastQua
 # LogKernel
 ###
 
-@simplify *(L::LogKernel, P::AbstractQuasiMatrix) = logkernel(P)*π
+@simplify *(L::LogKernel, P::AbstractQuasiMatrix) = logkernel(P)
 
 """
     logkernel(P)
 
-applies the log kernel log(x-t)/π to the columns of a quasi matrix, i.e., `(log.(x - x') * P)/π`
+applies the log kernel log(x-t) to the columns of a quasi matrix, i.e., `(log.(x - x') * P)/π`
 """
 logkernel(P, z...) = logkernel_layout(MemoryLayout(P), P, z...)
 logkernel_layout(lay, P, z...) = error("not implemented")
 
-logkernel(wT::Weighted{T,<:ChebyshevT}) where T = ChebyshevT{T}() * Diagonal(Vcat(-log(2*one(T)),inv.(-(1:∞))))
-function logkernel_layout(::MappedBasisLayout, wT::SubQuasiArray{V,2}) where V
+logkernel(wT::Weighted{T,<:ChebyshevT}) where T = ChebyshevT{T}() * Diagonal(Vcat(-convert(T,π)*log(2*one(T)),-convert(T,π)./(1:∞)))
+function logkernel_layout(::MappedBasisLayouts, wT::SubQuasiArray{V,2}) where V
     kr,jr = parentindices(wT.P)
     @assert kr isa AbstractAffineQuasiVector
     T = parent(wT.P)
     x = axes(T,1)
     W = Weighted(T)
     A = kr.A
-    T[kr,:] * Diagonal(Vcat(-(log(2*one(V))+log(abs(A)))/A,-inv.(A * (1:∞))))
+    L = logkernel(T)
+    basis(L)[kr,L] * (coefficients(L)/A - sum(T; dims=1)*log(abs(A))/A)
 end
 
 
@@ -35,33 +36,33 @@ end
 ####
 
 @simplify function *(L::LogKernelPoint, P::AbstractQuasiMatrix)
-    z, xc = parent(L).args[1].args[1].args
-    logkernel(P, z)*π
+    z, xc = L.args[1].args[1].args
+    logkernel(P, z)
 end
 
 @simplify function *(L::ComplexLogKernelPoint, P::AbstractQuasiMatrix)
-    z, xc = parent(L).args[1].args[1].args
-    complexlogkernel(P, z)*π
+    z, xc = L.args[1].args
+    complexlogkernel(P, z)
 end
 
 function logkernel(wP::Weighted{T,<:ChebyshevU}, z) where T
     if z in axes(wP,1)
-        Tn = Vcat(log(2*one(T)), ChebyshevT{T}()[z,2:end]./oneto(∞))
+        Tn = Vcat(convert(T,π)*log(2*one(T)), convert(T,π)*ChebyshevT{T}()[z,2:end]./oneto(∞))
         return transpose((Tn[3:end]-Tn[1:end])/2)
     else
         # for U_k where k>=1
         ξ = inv(z + sqrtx2(z))
-        ζ = ξ.^oneto(∞) ./ oneto(∞)
+        ζ = (convert(T,π)*ξ.^oneto(∞))./oneto(∞)
         ζ = (ζ[3:end]- ζ[1:end])/2
 
         # for U_0
-        ζ = Vcat(ξ^2/4 - (log.(abs.(ξ)) + log(2*one(T)))/2, ζ)
+        ζ = Vcat(convert(T,π)*(ξ^2/4 - (log.(abs.(ξ)) + log(2*one(T)))/2), ζ)
         return transpose(ζ)
     end
 
 end
 
-@simplify function complexlogkernel(P::Legendre{T}, z) where T
+function complexlogkernel(P::Legendre{T}, z) where T
     r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
     r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
     r2 = z*r1 + 2*one(T)/3
