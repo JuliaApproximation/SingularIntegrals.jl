@@ -60,56 +60,82 @@ associated(::ChebyshevU{T}) where T = ChebyshevU{T}()
 const ConvKernel{T,D1,V,D2} = BroadcastQuasiMatrix{T,typeof(-),Tuple{D1,QuasiAdjoint{V,Inclusion{V,D2}}}}
 const StieltjesPoint{T,W<:Number,V,D} = BroadcastQuasiMatrix{T,typeof(inv),Tuple{ConvKernel{T,W,V,D}}}
 const StieltjesPoints{T,W<:AbstractVector{<:Number},V,D} = BroadcastQuasiMatrix{T,typeof(inv),Tuple{ConvKernel{T,W,V,D}}}
-const Hilbert{T,D1,D2} = BroadcastQuasiMatrix{T,typeof(inv),Tuple{ConvKernel{T,Inclusion{T,D1},T,D2}}}
+const Stieltjes{T,D1,D2} = BroadcastQuasiMatrix{T,typeof(inv),Tuple{ConvKernel{T,Inclusion{T,D1},T,D2}}}
 
 
 
-@simplify function *(H::Hilbert{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, w::ChebyshevTWeight)
+@simplify function *(H::Stieltjes, w::AbstractQuasiVecOrMat)
     T = promote_type(eltype(H), eltype(w))
-    zeros(T, axes(w,1))
+    stieltjes(convert(AbstractQuasiArray{T}, w), axes(H,1))
 end
 
-@simplify function *(H::Hilbert{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, w::ChebyshevUWeight)
+@simplify function *(H::StieltjesPoint, w::AbstractQuasiMatrix)
     T = promote_type(eltype(H), eltype(w))
-    convert(T,π) * axes(w,1)
+    z = H.args[1].args[1]
+    convert(AbstractArray{T}, stieltjes(w, z))
 end
 
-@simplify function *(H::Hilbert{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, w::LegendreWeight)
+@simplify function *(H::StieltjesPoint, w::AbstractQuasiVector)
     T = promote_type(eltype(H), eltype(w))
+    z = H.args[1].args[1]
+    convert(T, stieltjes(w, z))
+end
+
+"""
+    stieltjes(P, y)
+
+computes inv.(y - x') * P understood in a principle value sense.
+"""
+stieltjes(P, y...) = stieltjes_layout(MemoryLayout(P), P, y...)
+function stieltjes_layout(lay, P, y)
+    axes(P,1) == y && return stieltjes(P)
+    error("Not implemented")
+end
+
+function stieltjes_layout(LAY::ApplyLayout{typeof(*)}, V::AbstractQuasiVecOrMat, y...)
+    a = arguments(LAY, V)
+    *(stieltjes(a[1], y...), tail(a)...)
+end
+
+stieltjes_layout(::ExpansionLayout, A, dims...) = stieltjes_layout(ApplyLayout{typeof(*)}(), A, dims...)
+
+
+"""
+    stieltjes(P)
+
+computes inv.(x - x') * P understood in a principle value sense.
+"""
+stieltjes(w::ChebyshevTWeight{T}) where T = zeros(T, axes(w,1))
+stieltjes(w::ChebyshevUWeight{T}) where T = convert(T,π) * axes(w,1)
+function stieltjes(w::LegendreWeight{T}) where T
     x = axes(w,1)
     log.(x .+ one(T)) .- log.(one(T) .- x)
 end
 
-@simplify function *(H::Hilbert{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, wT::Weighted{<:Any,<:ChebyshevT})
-    T = promote_type(eltype(H), eltype(wT))
-    ChebyshevU{T}() * _BandedMatrix(Fill(-convert(T,π),1,∞), ℵ₀, -1, 1)
-end
 
-@simplify function *(H::Hilbert{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, wU::Weighted{<:Any,<:ChebyshevU})
-    T = promote_type(eltype(H), eltype(wU))
-    ChebyshevT{T}() * _BandedMatrix(Fill(convert(T,π),1,∞), ℵ₀, 1, -1)
-end
+stieltjes(wT::Weighted{T,<:ChebyshevT}) where T = ChebyshevU{T}() * _BandedMatrix(Fill(-convert(T,π),1,∞), ℵ₀, -1, 1)
+stieltjes(wU::Weighted{T,<:ChebyshevU}) where T = ChebyshevT{T}() * _BandedMatrix(Fill(convert(T,π),1,∞), ℵ₀, 1, -1)
 
 
 
-@simplify function *(H::Hilbert{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, wP::Weighted{<:Any,<:OrthogonalPolynomial})
+function stieltjes(wP::Weighted{<:Any,<:OrthogonalPolynomial})
     P = wP.P
     w = orthogonalityweight(P)
     A = recurrencecoefficients(P)[1]
     Q = associated(P)
-    (-A[1]*sum(w))*[zero(axes(P,1)) Q] + (H*w) .* P
+    (-A[1]*sum(w))*[zero(axes(P,1)) Q] + stieltjes(w) .* P
 end
 
-@simplify *(H::Hilbert{<:Any,<:ChebyshevInterval,<:ChebyshevInterval}, P::Legendre) = H * Weighted(P)
+stieltjes(P::Legendre) = stieltjes(Weighted(P))
 
 
 ##
-# OffHilbert
+# OffStieltjes
 ##
 
-@simplify function *(H::Hilbert{<:Any,<:Any,<:ChebyshevInterval}, W::Weighted{<:Any,<:ChebyshevU})
+function stieltjes(W::Weighted{<:Any,<:ChebyshevU}, x::Inclusion)
+    x == axes(W,1) && return stieltjes(W)
     tol = eps()
-    x = axes(H,1)
     T̃ = chebyshevt(x)
     ψ_1 = T̃ \ inv.(x .+ sqrtx2.(x)) # same ψ_1 = x .- sqrt(x^2 - 1) but with relative accuracy as x -> ∞
     M = Clenshaw(T̃ * ψ_1, T̃)
@@ -134,24 +160,19 @@ end
 
 stieltjesmoment_jacobi_normalization(n::Int,α::Real,β::Real) = 2^(α+β)*gamma(n+α+1)*gamma(n+β+1)/gamma(2n+α+β+2)
 
-@simplify function *(S::StieltjesPoint, w::AbstractJacobiWeight)
-    α,β = w.a,w.b
-    z,_ = parent(S).args[1].args
+function stieltjes(w::AbstractJacobiWeight, z::Number)
+    α,β = real(w.a),real(w.b)
     (x = 2/(1-z);stieltjesmoment_jacobi_normalization(0,α,β)*HypergeometricFunctions.mxa_₂F₁(1,α+1,α+β+2,x))
 end
 
-@simplify function *(S::StieltjesPoint, w::ChebyshevTWeight)
+function stieltjes(w::ChebyshevTWeight{T}, z::Number) where T
     α,β = w.a,w.b
-    z,_ = parent(S).args[1].args
-    T = promote_type(eltype(S), eltype(w))
     z in axes(w,1) && return zero(T)
     convert(T, π)/sqrtx2(z)
 end
 
-@simplify function *(S::StieltjesPoint, w::ChebyshevUWeight)
+function stieltjes(w::ChebyshevUWeight{T}, z::Number) where T
     α,β = w.a,w.b
-    z,_ = parent(S).args[1].args
-    T = promote_type(eltype(S), eltype(w))
     z in axes(w,1) && return π*z
     convert(T, π)/(z + sqrtx2(z))
 end
@@ -162,12 +183,11 @@ end
     [inv.(z .- x') * w for z in zs]
 end
 
-@simplify function *(S::StieltjesPoint, wP::Weighted)
+function stieltjes(wP::Weighted, z::Number)
     P = wP.P
     w = orthogonalityweight(P)
-    z, xc = parent(S).args[1].args
     A,B,C = recurrencecoefficients(P)
-    r1 = (S * w)*_p0(P) # stieltjes of the weight
+    r1 = stieltjes(w, z)*_p0(P) # stieltjes of the weight
     # (a[1]-z)*r[1] + b[1]r[2] == -sum(w)*_p0(P)
     # (a[1]/b[1]-z/b[1])*r[1] + r[2] == -sum(w)*_p0(P)/b[1]
     # (A[1]z + B[1])*r[1] - r[2] == A[1]sum(w)*_p0(P)
@@ -180,9 +200,7 @@ sqrtx2(z::Number) = sqrt(z-1)*sqrt(z+1)
 sqrtx2(x::Real) = sign(x)*sqrt(x^2-1)
 
 
-@simplify function *(S::StieltjesPoint, P::Legendre)
-    S * Weighted(P)
-end
+stieltjes(P::Legendre, z...) = stieltjes(Weighted(P), z...)
 
 @simplify function *(S::StieltjesPoints, wP::Weighted)
     z = S.args[1].args[1] # vector of points to eval at
@@ -206,42 +224,40 @@ end
 # mapped
 ###
 
-@simplify function *(H::Hilbert, w::SubQuasiArray{<:Any,1})
-    T = promote_type(eltype(H), eltype(w))
+function stieltjes_layout(::MappedWeightLayout, w::SubQuasiArray{<:Any,1})
     m = parentindices(w)[1]
     # TODO: mapping other geometries
-    @assert axes(H,1) == axes(H,2) == axes(w,1)
     P = parent(w)
-    x = axes(P,1)
-    (inv.(x .- x') * P)[m]
+    stieltjes(P)[m]
 end
 
+function stieltjes_layout(::MappedWeightLayout, w::AbstractQuasiVector, z::Number)
+    m = basismap(w)
+    # TODO: mapping other geometries
+    P = demap(w)
+    stieltjes(P, inbounds_getindex(m, z))
+end
 
-@simplify function *(H::Hilbert, wP::SubQuasiArray{<:Any,2,<:Any,<:Tuple{<:AbstractAffineQuasiVector,<:Any}})
-    T = promote_type(eltype(H), eltype(wP))
-    kr,jr = parentindices(wP)
-    W = parent(wP)
-    x = axes(H,1)
-    t = axes(H,2)
+function stieltjes_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wP::AbstractQuasiMatrix, x::Inclusion)
+    kr = basismap(wP)
+    W = demap(wP)
     t̃ = axes(W,1)
-    if x == t
-        (inv.(t̃ .- t̃') * W)[kr,jr]
-    else
-        M = affine(t,t̃)
-        @assert x isa Inclusion
-        a,b = first(x),last(x)
-        x̃ = Inclusion((M.A * a .+ M.b)..(M.A * b .+ M.b)) # map interval to new interval
-        Q̃,M = arguments(*, inv.(x̃ .- t̃') * W)
-        parent(Q̃)[affine(x,axes(parent(Q̃),1)),:] * M
-    end
+    t = axes(wP,1)
+
+    x == t && return stieltjes(W)[kr,:]
+
+    M = affine(t,t̃)
+    @assert x isa Inclusion
+    a,b = first(x),last(x)
+    x̃ = Inclusion((M.A * a .+ M.b)..(M.A * b .+ M.b)) # map interval to new interval
+    Q̃,M = arguments(*, stieltjes(W, x̃))
+    parent(Q̃)[affine(x,axes(parent(Q̃),1)),:] * M
 end
 
-@simplify function *(S::StieltjesPoint, wT::SubQuasiArray{<:Any,2,<:Any,<:Tuple{<:AbstractAffineQuasiVector,<:Any}})
-    P = parent(wT)
-    z, x = parent(S).args[1].args
-    z̃ = inbounds_getindex(parentindices(wT)[1], z)
-    x̃ = axes(P,1)
-    (inv.(z̃ .- x̃') * P)[:,parentindices(wT)[2]]
+function stieltjes_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::AbstractQuasiMatrix, z::Number)
+    P = demap(wT)
+    z̃ = inbounds_getindex(basismap(wT), z)
+    stieltjes(P, z̃)
 end
 
 ###
@@ -249,27 +265,23 @@ end
 ###
 
 
-@simplify function *(H::Hilbert, W::PiecewiseInterlace)
-    axes(H,2) == axes(W,1) || throw(DimensionMismatch())
+function stieltjes(W::PiecewiseInterlace)
     Hs = broadcast(function(a,b)
                 x,t = axes(a,1),axes(b,1)
-                H = inv.(x .- t') * b
+                H = stieltjes(b, x)
                 H
             end, [W.args...], permutedims([W.args...]))
     N = length(W.args)
     Ts = [broadcastbasis(+, broadcast(H -> H.args[1], Hs[k,:])...) for k=1:N]
     Ms = broadcast((T,H) -> unitblocks(T\H), Ts, Hs)
-    PiecewiseInterlace(Ts...) * BlockBroadcastArray{promote_type(eltype(H),eltype(W))}(hvcat, N, permutedims(Ms)...)
+    PiecewiseInterlace(Ts...) * BlockBroadcastArray{eltype(W)}(hvcat, N, permutedims(Ms)...)
 end
 
 
-@simplify function *(H::StieltjesPoint, S::PiecewiseInterlace)
-    z, xc = parent(H).args[1].args
-    axes(H,2) == axes(S,1) || throw(DimensionMismatch())
+function stieltjes(S::PiecewiseInterlace, z::Number)
     @assert length(S.args) == 2
     a,b = S.args
-    xa,xb = axes(a,1),axes(b,1)
-    Sa = inv.(z .- xa') * a
-    Sb = inv.(z .- xb') * b
+    Sa = stieltjes(a, z)
+    Sb = stieltjes(b, z)
     transpose(BlockBroadcastArray(vcat, unitblocks(transpose(Sa)), unitblocks(transpose(Sb))))
 end

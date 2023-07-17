@@ -1,7 +1,9 @@
-using SingularIntegrals, ClassicalOrthogonalPolynomials, Test
-using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, paddeddata
+using SingularIntegrals, ClassicalOrthogonalPolynomials, QuasiArrays, BandedMatrices, Test
+using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, paddeddata, colsupport, rowsupport
+using ClassicalOrthogonalPolynomials: orthogonalityweight
+using SingularIntegrals: Stieltjes, StieltjesPoint
 
-@testset "Hilbert" begin
+@testset "Stieltjes" begin
     @testset "weights" begin
         w_T = ChebyshevTWeight()
         w_U = ChebyshevUWeight()
@@ -31,7 +33,7 @@ using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, pa
         wU = Weighted(ChebyshevU())
         x = axes(wT,1)
         H = inv.(x .- x')
-        @test H isa Hilbert{Float64,ChebyshevInterval{Float64}}
+        @test H isa Stieltjes{Float64,ChebyshevInterval{Float64}}
 
         @test (Ultraspherical(1) \ (H*wT))[1:10,1:10] == diagm(1 => fill(-π,9))
         @test (Chebyshev() \ (H*wU))[1:10,1:10] == diagm(-1 => fill(1.0π,9))
@@ -73,7 +75,7 @@ using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, pa
     end
 end
 
-@testset "Stieltjes" begin
+@testset "StieltjesPoint" begin
     T = Chebyshev()
     wT = Weighted(T)
     x = axes(wT,1)
@@ -165,7 +167,7 @@ end
     @test v(0.1,0.2) ≈ 0.18496257285081724 # Emperical
 end
 
-@testset "OffHilbert" begin
+@testset "OffStieltjes" begin
     @testset "ChebyshevU" begin
         U = ChebyshevU()
         W = Weighted(U)
@@ -218,86 +220,4 @@ end
         H = T \ inv.(x .- t') * W
         @test T[0.5,1:N]'*(H * (W \ @.(sqrt(-1-t)*sqrt(t+2)*exp(t))))[1:N] ≈ 0.047390454610749054
     end
-end
-
-@testset "two-interval" begin
-    T1,T2 = chebyshevt((-2)..(-1)), chebyshevt(0..2)
-    U1,U2 = chebyshevu((-2)..(-1)), chebyshevu(0..2)
-    W = PiecewiseInterlace(Weighted(U1), Weighted(U2))
-    T = PiecewiseInterlace(T1, T2)
-    U = PiecewiseInterlace(U1, U2)
-    x = axes(W,1)
-    H = T \ inv.(x .- x') * W;
-
-    @test iszero(H[1,1])
-    @test H[3,1] ≈ π
-    @test maximum(blockcolsupport(H,Block(5))) ≤ Block(50)
-    @test blockbandwidths(H) == (25,26)
-
-    c = W \ broadcast(x -> exp(x)* (0 ≤ x ≤ 2 ? sqrt(2-x)*sqrt(x) : sqrt(-1-x)*sqrt(x+2)), x)
-    f = W * c
-    @test T[0.5,1:200]'*(H*c)[1:200] ≈ -6.064426633490422
-
-    @testset "inversion" begin
-        H̃ = BlockHcat(Eye((axes(H,1),))[:,Block(1)], H)
-        @test blockcolsupport(H̃,Block(1)) == Block.(1:1)
-        @test last(blockcolsupport(H̃,Block(2))) ≤ Block(30)
-
-        UT = U \ T
-        D = U \ Derivative(x) * T
-        V = x -> x^4 - 10x^2
-        Vp = x -> 4x^3 - 20x
-        V_cfs = T \ V.(x)
-        Vp_cfs_U = D * V_cfs
-        Vp_cfs_T = T \ Vp.(x);
-
-        @test (UT \ Vp_cfs_U)[Block.(1:10)] ≈ Vp_cfs_T[Block.(1:10)]
-
-        @time c = H̃ \ Vp_cfs_T;
-
-        @test c[Block.(1:100)] ≈ H̃[Block.(1:100),Block.(1:100)] \ Vp_cfs_T[Block.(1:100)]
-
-        E1,E2 = c[Block(1)]
-        @test [E1,E2] ≈  [12.939686758642496,-10.360345667126758]
-        c1 = [paddeddata(c)[3:2:end]; Zeros(∞)]
-        c2 = [paddeddata(c)[4:2:end]; Zeros(∞)]
-
-        u1 = Weighted(U1) * c1
-        u2 = Weighted(U2) * c2
-        x1 = axes(u1,1)
-        x2 = axes(u2,1)
-
-        @test inv.(-1.3 .- x1') * u1 + inv.(-1.3 .- x2') * u2 + E1 ≈ Vp(-1.3)
-        @test inv.(1.3 .- x1') * u1 + inv.(1.3 .- x2') * u2 + E2 ≈ Vp(1.3)
-    end
-
-    @testset "Stieltjes" begin
-        z = 5.0
-        @test inv.(z .- x')*f ≈ 1.317290060427562
-        @test log.(abs.(z .- x'))*f ≈ 6.523123127595374
-        @test log.(abs.((-z) .- x'))*f ≈ 8.93744698863906
-
-        t = 1.2
-        @test inv.(t .- x')*f ≈ -2.797995066227555
-        @test log.(abs.(t .- x'))*f ≈ -5.9907385495482821485
-    end
-end
-
-@testset "three-interval" begin
-    d = (-2..(-1), 0..1, 2..3)
-    T = PiecewiseInterlace(chebyshevt.(d)...)
-    U = PiecewiseInterlace(chebyshevu.(d)...)
-    W = PiecewiseInterlace(Weighted.(U.args)...)
-    x = axes(W,1)
-    H = T \ inv.(x .- x') * W
-    c = W \ broadcast(x -> exp(x) *
-        if -2 ≤ x ≤ -1
-            sqrt(x+2)sqrt(-1-x)
-        elseif 0 ≤ x ≤ 1
-            sqrt(1-x)sqrt(x)
-        else
-            sqrt(x-2)sqrt(3-x)
-        end, x)
-    f = W * c
-    @test T[0.5,1:200]'*(H*c)[1:200] ≈ -3.0366466972156143
 end
