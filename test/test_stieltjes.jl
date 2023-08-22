@@ -107,7 +107,7 @@ end
         @test (inv.(t .- x') * Weighted(T))[1:10] ≈ (inv.((t+eps()im) .- x') * Weighted(T))[1:10]
         @test (inv.(t .- x') * Weighted(U))[1:10] ≈ (inv.((t+eps()im) .- x') * Weighted(U))[1:10]
         @test (inv.(t .- x') * P)[5] ≈ 0.0023221516632410816
-        @test (inv.(t .- x') * P)[10] ≈ 2.2435707298304464E-6 
+        @test (inv.(t .- x') * P)[10] ≈ 2.2435707298304464E-6
 
         t = 2
         @test (inv.(t .- x') * Weighted(T))[1:10] ≈ (inv.((t+eps()im) .- x') * Weighted(T))[1:10]
