@@ -87,17 +87,20 @@ end
 computes inv.(y - x') * P understood in a principle value sense.
 """
 stieltjes(P, y...) = stieltjes_layout(MemoryLayout(P), P, y...)
-function stieltjes_layout(lay, P, y)
+stieltjes_layout(lay, P, y) = stieltjes_size(size(P), P, y)
+function stieltjes_size(sz, P, y)
     axes(P,1) == y && return stieltjes(P)
     error("Not implemented")
 end
+
+stieltjes_size(::Tuple{Any}, P, zs::AbstractVector) = [stieltjes(P, z) for z in zs]
 
 function stieltjes_layout(LAY::ApplyLayout{typeof(*)}, V::AbstractQuasiVecOrMat, y...)
     a = arguments(LAY, V)
     *(stieltjes(a[1], y...), tail(a)...)
 end
 
-stieltjes_layout(::ExpansionLayout, A, dims...) = stieltjes_layout(ApplyLayout{typeof(*)}(), A, dims...)
+stieltjes_layout(::ExpansionLayout, A, y...) = stieltjes_layout(ApplyLayout{typeof(*)}(), A, y...)
 
 
 """
@@ -179,8 +182,7 @@ end
 
 @simplify function *(S::StieltjesPoints, w::Weight)
     zs = S.args[1].args[1] # vector of points to eval at
-    x = axes(w,1)
-    [inv.(z .- x') * w for z in zs]
+    stieltjes(w, zs)
 end
 
 function stieltjes(wP::Weighted, z::Number)
@@ -196,6 +198,17 @@ function stieltjes(wP::Weighted, z::Number)
     transpose(RecurrenceArray(z, (A,B,C), [r1,r2]))
 end
 
+function stieltjes(wP::Weighted, z::AbstractVector)
+    T = promote_type(eltype(z), eltype(wP))
+    P = wP.P
+    A,B,C = recurrencecoefficients(P)
+    w = orthogonalityweight(P)
+    data = Matrix{T}(undef, 2, length(z))
+    data[1,:] .= stieltjes(w, z) .* _p0(P)
+    data[2,:] .= (A[1] .* z .+ B[1]) .* data[1,:] .- (A[1]sum(w)*_p0(P))
+    transpose(RecurrenceArray(z, (A,B,C), data))
+end
+
 sqrtx2(z::Number) = sqrt(z-1)*sqrt(z+1)
 sqrtx2(x::Real) = sign(x)*sqrt(x^2-1)
 
@@ -204,14 +217,7 @@ stieltjes(P::Legendre, z...) = stieltjes(Weighted(P), z...)
 
 @simplify function *(S::StieltjesPoints, wP::Weighted)
     z = S.args[1].args[1] # vector of points to eval at
-    T = promote_type(eltype(S), eltype(wP))
-    P = wP.P
-    A,B,C = recurrencecoefficients(P)
-    w = orthogonalityweight(P)
-    data = Matrix{T}(undef, 2, length(z))
-    data[1,:] .= (S * w) .* _p0(P)
-    data[2,:] .= (A[1] .* z .+ B[1]) .* data[1,:] .- (A[1]sum(w)*_p0(P))
-    transpose(RecurrenceArray(z, (A,B,C), data))
+    stieltjes(wP, z)
 end
 
 @simplify function *(S::StieltjesPoints, P::Legendre)

@@ -25,7 +25,7 @@ include("test_recurrence.jl")
     @test sum(w) == 1
 end
 
-include("test_hilbert.jl")
+include("test_stieltjes.jl")
 include("test_logkernel.jl")
 include("test_power.jl")
 include("test_piecewise.jl")
