@@ -141,11 +141,14 @@ end
         @test inv.(z .- x') * f ≈ [2.8826861116458593, 1.6307809018753612]
     end
 
-    @testset "StieltjesPoints Legendre" begin
+    @testset "StieltjesPoints" begin
         z = [2.,3.]
         P = Legendre()
         x = axes(P,1)
-        @test (inv.(z .- x') * P)[:,1:5] ≈ [(inv.(2 .- x')*P)[1:5]'; (inv.(3 .- x')*P)[1:5]']
+        S = inv.(z .- x')
+        @test (S * P)[:,1:5] ≈ [(inv.(2 .- x')*P)[1:5]'; (inv.(3 .- x')*P)[1:5]']
+
+        @test S * JacobiWeight(0.1,0.2) == stieltjes.(Ref(JacobiWeight(0.1,0.2)), z)
     end
 end
 
