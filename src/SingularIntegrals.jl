@@ -10,7 +10,7 @@ import LinearAlgebra: dot
 using BandedMatrices: _BandedMatrix
 using FastTransforms: _forwardrecurrence!, _forwardrecurrence_next
 
-export associated, stieltjes, logkernel, powerkernel
+export associated, stieltjes, logkernel, powerkernel, complexlogkernel
 
 
 include("recurrence.jl")
