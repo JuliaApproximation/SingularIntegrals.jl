@@ -3,7 +3,6 @@ using SingularIntegrals: RecurrenceArray
 using ClassicalOrthogonalPolynomials: affine
 
 @testset "ComplexLogKernelPoint" begin
-
     P = Legendre()
     Pc = Legendre{ComplexF64}()
     x = axes(P,1)
@@ -19,6 +18,10 @@ using ClassicalOrthogonalPolynomials: affine
         @test_throws DomainError log.(z .- x') * P
     end
 
+    @testset "expand" begin
+        @test complexlogkernel(exp.(x), 2 + im) ≈ sum(log.((2+im) .- x) .* exp.(x))
+        @test_throws ErrorException complexlogkernel(Jacobi(0.1,0.2), 2+im)
+    end
 end
 
 @testset "LogKernelPoint" begin
