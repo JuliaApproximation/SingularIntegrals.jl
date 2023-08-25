@@ -30,14 +30,26 @@ end
 applies the log kernel log(x-t) to the columns of a quasi matrix, i.e., `(log.(x - x') * P)/π`
 """
 logkernel(P, z...) = logkernel_layout(MemoryLayout(P), P, z...)
-logkernel_layout(lay, P, z...) = error("not implemented")
+
+complexlogkernel(P, z...) = complexlogkernel_layout(MemoryLayout(P), P, z...)
+
+
+logkernel_layout(::AbstractBasisLayout, P, z...) = error("not implemented")
+logkernel_layout(lay, P, z...) = logkernel(expand(P), z...)
+complexlogkernel_layout(lay, P, z...) = complexlogkernel(expand(P), z...)
 
 function logkernel_layout(LAY::ApplyLayout{typeof(*)}, V::AbstractQuasiVector, y...)
     a = arguments(LAY, V)
     *(logkernel(a[1], y...), tail(a)...)
 end
 
+function complexlogkernel_layout(LAY::ApplyLayout{typeof(*)}, V::AbstractQuasiVector, y...)
+    a = arguments(LAY, V)
+    *(complexlogkernel(a[1], y...), tail(a)...)
+end
+
 logkernel_layout(::ExpansionLayout, A, dims...) = logkernel_layout(ApplyLayout{typeof(*)}(), A, dims...)
+complexlogkernel_layout(::ExpansionLayout, A, dims...) = complexlogkernel_layout(ApplyLayout{typeof(*)}(), A, dims...)
 
 logkernel(wT::Weighted{T,<:ChebyshevT}) where T = ChebyshevT{T}() * Diagonal(Vcat(-convert(T,π)*log(2*one(T)),-convert(T,π)./(1:∞)))
 function logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::AbstractQuasiMatrix{V}) where V
