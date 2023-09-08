@@ -118,7 +118,7 @@ function backwardrecurrence!(K, A, B, C, z, nN::AbstractUnitRange, j...)
             μ = min(abs(data[k,j...]/data[k-1,j...]), abs(data[k-1,j...]/data[k-2,j...]))
             # data[k] * μ^M ≤ ε
             #  M ≥ log(ε/data[k])/log(μ)
-            N = ceil(Int, max(2N, min(maxiterations, log(eps(real(T))/100)/log(μ))))
+            N = ceil(Int, max(2N, min(maxiterations, log(eps(real(T))/100)/log(μ+eps(real(T))))))
             _growdata!(K, N, j...)
             resize!(u, N)
             data = K.data
