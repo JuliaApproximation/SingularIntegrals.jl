@@ -22,6 +22,12 @@ using ClassicalOrthogonalPolynomials: recurrencecoefficients
             @test r[1:1000] ≈ ξ.^(1:1000)
             @test r[10_000] ≈ ξ.^(10_000) atol=3E-10
         end
+
+        for z in (0.2567881003580743 - 0.33437737333561895im)
+            ξ = π * (z - √(z-1) * √(z+1))
+            r = RecurrenceArray(z, recurrencecoefficients(U), [ξ,2z*ξ-π])
+            @test sizeof(r.data) < 1000_000
+        end
     end
 
     @testset "RecurrenceMatrix" begin
