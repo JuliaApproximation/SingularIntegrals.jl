@@ -36,7 +36,7 @@ logkernel(P, z...) = logkernel_layout(MemoryLayout(P), P, z...)
 """
     complexlogkernel(P)
 
-applies the log kernel log(x-t) to the columns of a quasi matrix, i.e., `(log.(x - x') * P)/π`
+applies the log kernel log(x-t) to the columns of a quasi matrix, i.e., `(log.(x - x') * P)`
 """
 complexlogkernel(P, z...) = complexlogkernel_layout(MemoryLayout(P), P, z...)
 
