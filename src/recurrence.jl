@@ -154,10 +154,15 @@ end
 
 _getindex_resize_iffinite!(A, kr, jr, _) = layout_getindex(A, kr, jr)
 
-@inline getindex(A::RecurrenceMatrix, kr::AbstractUnitRange, jr::AbstractUnitRange) = _getindex_resize_iffinite!(A, kr, jr, last(kr))
-@inline getindex(A::RecurrenceMatrix, kr::AbstractVector, jr::AbstractVector) = _getindex_resize_iffinite!(A, kr, jr, last(kr))
+@inline getindex(A::RecurrenceMatrix, kr::AbstractUnitRange, jr::AbstractUnitRange) = _getindex_resize_iffinite!(A, kr, jr, maximum(kr))
+@inline getindex(A::RecurrenceMatrix, kr::AbstractVector, jr::AbstractVector) = _getindex_resize_iffinite!(A, kr, jr, maximum(kr))
 @inline getindex(A::RecurrenceMatrix, k::Integer, jr::AbstractVector) = _getindex_resize_iffinite!(A, k, jr, k)
 @inline getindex(A::RecurrenceMatrix, k::Integer, jr::AbstractUnitRange) = _getindex_resize_iffinite!(A, k, jr, k)
 @inline getindex(A::RecurrenceMatrix, k::Integer, ::Colon) = _getindex_resize_iffinite!(A, k, :, k)
-@inline getindex(A::RecurrenceMatrix, kr::AbstractVector, ::Colon) = _getindex_resize_iffinite!(A, kr, :, last(kr))
-@inline getindex(A::RecurrenceMatrix, kr::AbstractUnitRange, ::Colon) = _getindex_resize_iffinite!(A, kr, :, last(kr))
+@inline getindex(A::RecurrenceMatrix, kr::AbstractVector, ::Colon) = _getindex_resize_iffinite!(A, kr, :, maximum(kr))
+@inline getindex(A::RecurrenceMatrix, kr::AbstractUnitRange, ::Colon) = _getindex_resize_iffinite!(A, kr, :, maximum(kr))
+
+function view(A::RecurrenceVector, kr::AbstractVector)
+    resizedata!(A, maximum(kr))
+    view(A.data, kr)
+end
