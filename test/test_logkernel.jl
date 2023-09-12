@@ -149,4 +149,9 @@ end
 
         @test logkernel(f, 0.1 + 0.2im) ≈ -1.6570185704416018
     end
+
+    @testset "sub-Legendre" begin
+        P = Legendre()
+        @test logkernel(P[:,1:10],0.1)' == logkernel(P, 0.1)'[1:10]
+    end
 end
