@@ -140,4 +140,18 @@ end
         L = log.(abs.(x .- x'))
         @test T[0.2,:]'*((T\L*Weighted(T)) * (T\exp.(x))) ≈ -2.9976362326874373 # Mathematica
     end
+
+    @testset "Legendre" begin
+        P = Legendre()
+        f = expand(P, exp)
+        @test logkernel(f, 0.1) ≈ logkernel(f, complex(0.1)) ≈ -2.3204982810441956
+        @test logkernel(f, [0.1,1.2,-0.5]) ≈ logkernel(f, ComplexF64[0.1,1.2,-0.5])
+
+        @test logkernel(f, 0.1 + 0.2im) ≈ -1.6570185704416018
+    end
+
+    @testset "sub-Legendre" begin
+        P = Legendre()
+        @test logkernel(P[:,1:10],0.1)' == logkernel(P, 0.1)'[1:10]
+    end
 end

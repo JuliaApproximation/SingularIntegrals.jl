@@ -52,6 +52,7 @@ for lk in (:logkernel, :complexlogkernel)
         end
 
         $lk_layout(::ExpansionLayout, A, dims...) = $lk_layout(ApplyLayout{typeof(*)}(), A, dims...)
+        $lk_layout(::SubBasisLayout, A, dims...) = $lk(parent(A), dims...)[:, parentindices(A)[2]]
     end
 end
 
@@ -89,7 +90,7 @@ end
 ####
 
 
-function logkernel(wP::Weighted{T,<:ChebyshevU}, z) where T
+function logkernel(wP::Weighted{T,<:ChebyshevU}, z::Number) where T
     if z in axes(wP,1)
         Tn = Vcat(convert(T,π)*log(2*one(T)), convert(T,π)*ChebyshevT{T}()[z,2:end]./oneto(∞))
         return transpose((Tn[3:end]-Tn[1:end])/2)
@@ -106,14 +107,56 @@ function logkernel(wP::Weighted{T,<:ChebyshevU}, z) where T
 
 end
 
-function complexlogkernel(P::Legendre{T}, z) where T
+function complexlogkernel(P::Legendre, z::Number)
+    T = promote_type(eltype(P), typeof(z))
     r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
     r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
     r2 = z*r1 + 2*one(T)/3
     transpose(RecurrenceArray(z, ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞)), [r0,r1,r2]))
 end
 
+function complexlogkernel(P::Legendre, zs::AbstractVector)
+    T = promote_type(eltype(P), eltype(zs))
+    m = length(zs)
+    data = Matrix{T}(undef, 3, m)
+    for j = 1:m
+        z = zs[j]
+        r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
+        r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
+        r2 = z*r1 + 2*one(T)/3
+        data[1,j] = r0; data[2,j] = r1; data[3,j] = r2;
+    end
+
+    transpose(RecurrenceArray(zs, ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞)), data))
+end
+
+
 logkernel(P::Legendre, z) = real.(complexlogkernel(P, complex(z)))
+
+function logkernel(P::Legendre, x::Real)
+    T = promote_type(eltype(P), typeof(x))
+    z = complex(x)
+    r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
+    r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
+    r2 = z*r1 + 2*one(T)/3
+    transpose(RecurrenceArray(x, ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞)), [real(r0),real(r1),real(r2)]))
+end
+
+function logkernel(P::Legendre, x::AbstractVector{<:Real})
+    T = promote_type(eltype(P), eltype(x))
+    m = length(x)
+    data = Matrix{T}(undef, 3, m)
+    for j = 1:m
+        z = complex(x[j])
+        r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
+        r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
+        r2 = z*r1 + 2*one(T)/3
+        data[1,j] = real(r0); data[2,j] = real(r1); data[3,j] = real(r2);
+    end
+
+    transpose(RecurrenceArray(x, ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞)), data))
+end
+
 
 ###
 # Maps
