@@ -40,22 +40,6 @@ applies the log kernel log(x-t) to the columns of a quasi matrix, i.e., `(log.(x
 """
 complexlogkernel(P, z...) = complexlogkernel_layout(MemoryLayout(P), P, z...)
 
-for lk in (:logkernel, :complexlogkernel)
-    lk_layout = Symbol(lk, :_layout)
-    @eval begin
-        $lk_layout(::AbstractBasisLayout, P, z...) = error("not implemented")
-        $lk_layout(lay, P, z...) = $lk(expand(P), z...)
-
-        function $lk_layout(LAY::ApplyLayout{typeof(*)}, V::AbstractQuasiVector, y...)
-            a = arguments(LAY, V)
-            *($lk(a[1], y...), tail(a)...)
-        end
-
-        $lk_layout(::ExpansionLayout, A, dims...) = $lk_layout(ApplyLayout{typeof(*)}(), A, dims...)
-        $lk_layout(::SubBasisLayout, A, dims...) = $lk(parent(A), dims...)[:, parentindices(A)[2]]
-    end
-end
-
 logkernel(wT::Weighted{T,<:ChebyshevT}) where T = ChebyshevT{T}() * Diagonal(Vcat(-convert(T,π)*log(2*one(T)),-convert(T,π)./(1:∞)))
 function logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::AbstractQuasiMatrix{V}) where V
     kr = basismap(wT)

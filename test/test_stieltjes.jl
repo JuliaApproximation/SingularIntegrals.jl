@@ -223,4 +223,10 @@ end
         H = T \ inv.(x .- t') * W
         @test T[0.5,1:N]'*(H * (W \ @.(sqrt(-1-t)*sqrt(t+2)*exp(t))))[1:N] ≈ 0.047390454610749054
     end
+
+    @testset "expand" begin
+        P = Legendre()
+        @test stieltjes(P[:,1], 3) ≈ stieltjes(P,3)[1]
+        @test stieltjes(P[:,1:3], 3) ≈ stieltjes(P,3)[:,1:3]
+    end
 end

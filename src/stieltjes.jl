@@ -87,21 +87,6 @@ end
 computes inv.(y - x') * P understood in a principle value sense.
 """
 stieltjes(P, y...) = stieltjes_layout(MemoryLayout(P), P, y...)
-stieltjes_layout(lay, P, y) = stieltjes_size(size(P), P, y)
-function stieltjes_size(sz, P, y)
-    axes(P,1) == y && return stieltjes(P)
-    error("Not implemented")
-end
-
-stieltjes_size(::Tuple{Any}, P, zs::AbstractVector) = [stieltjes(P, z) for z in zs]
-
-function stieltjes_layout(LAY::ApplyLayout{typeof(*)}, V::AbstractQuasiVecOrMat, y...)
-    a = arguments(LAY, V)
-    *(stieltjes(a[1], y...), tail(a)...)
-end
-
-stieltjes_layout(::ExpansionLayout, A, y...) = stieltjes_layout(ApplyLayout{typeof(*)}(), A, y...)
-
 
 """
     stieltjes(P)
