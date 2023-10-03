@@ -1,7 +1,7 @@
 name = "SingularIntegrals"
 uuid = "d7440221-8b5e-42fc-909c-0567823f424a"
 authors = ["Sheehan Olver <solver@mac.com>"]
-version = "0.2.4"
+version = "0.2.5"
 
 [deps]
 ArrayLayouts = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
@@ -20,7 +20,7 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
 ArrayLayouts = "1.4"
-BandedMatrices = "0.17.17"
+BandedMatrices = "0.17.17, 1"
 ClassicalOrthogonalPolynomials = "0.11"
 ContinuumArrays = "0.16"
 FastTransforms = "0.15"
