@@ -1,5 +1,5 @@
 using SingularIntegrals, ClassicalOrthogonalPolynomials, FillArrays, Test
-using SingularIntegrals: RecurrenceArray
+using SingularIntegrals: RecurrenceArray, LogKernelPoint
 using ClassicalOrthogonalPolynomials: affine
 
 @testset "ComplexLogKernelPoint" begin
@@ -29,8 +29,11 @@ end
         wU = Weighted(ChebyshevU())
         x = axes(wU,1)
         z = 0.1+0.2im
-        L = log.(abs.(z.-x'))
+        L = log.(abs.(z .- x'))
         @test L isa LogKernelPoint{Float64,ComplexF64,ComplexF64,Float64,ChebyshevInterval{Float64}}
+        @test (L * wU)[1:5] ≈ [  -1.2919202947616695, -0.20965486677056738, 0.6799687631764493, 0.13811497572177128, -0.2289481463304956]
+
+        @test L * (wU / wU \ @.(exp(x) * sqrt(1 - x^2))) ≈ -1.4812979070884382
     end
 
     @testset "Real point" begin

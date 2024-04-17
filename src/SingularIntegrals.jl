@@ -32,12 +32,17 @@ for Op in (:Stieltjes, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :Log
 end
 
 
+logkernel_layout(::AbstractBasisLayout, P, z...) = real.(complexlogkernel(P, z...))
+
+for lk in (:complexlogkernel, :stieltjes)
+    lk_layout = Symbol(lk, :_layout)
+    @eval $lk_layout(::AbstractBasisLayout, P, z...) = error("not implemented")
+end
 
 # general routines
 for lk in (:logkernel, :complexlogkernel, :stieltjes)
     lk_layout = Symbol(lk, :_layout)
     @eval begin
-        $lk_layout(::AbstractBasisLayout, P, z...) = error("not implemented")
         $lk_layout(::AbstractWeightLayout, w, zs::AbstractVector) = [stieltjes(w, z) for z in zs]
         function $lk_layout(::AbstractWeightLayout, w, z::Inclusion)
             axes(w,1) == z || error("Not implemented")

@@ -74,7 +74,7 @@ end
 ####
 
 
-function logkernel(wP::Weighted{T,<:ChebyshevU}, z::Number) where T
+function complexlogkernel(wP::Weighted{T,<:ChebyshevU}, z::Number) where T
     if z in axes(wP,1)
         Tn = Vcat(convert(T,π)*log(2*one(T)), convert(T,π)*ChebyshevT{T}()[z,2:end]./oneto(∞))
         return transpose((Tn[3:end]-Tn[1:end])/2)
