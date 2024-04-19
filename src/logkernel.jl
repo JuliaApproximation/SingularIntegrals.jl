@@ -76,12 +76,18 @@ logkernel_layout(::WeightedOPLayout{MappedOPLayout}, wT, z::Real) = logkernel_de
 # LogKernelPoint
 ####
 
-function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevT}, z::Number)
+complexlogkernel_layout(::WeightedOPLayout, wP, z::Number) = transpose(RecurrenceArray(z, complexlogkernel_recurrence(wP,z), [complexlogkernel_ics(wP,z)...]))
+
+function complexlogkernel_ics(wP::Weighted{<:Any,<:ChebyshevT}, z::Number)
     V = promote_type(eltype(wP), typeof(z))
     ξ = inv(z + sqrtx2(z))
     r0 = convert(V,π)*(-log(ξ)-log(convert(V,2)))
     r1 = -convert(V,π)*ξ
     r2 = convert(V,π)/2 + z*r1
+    r0,r1,r2
+end
+
+function complexlogkernel_recurrence(wP::Weighted{<:Any,<:ChebyshevT}, z::Number)
     # We have for n ≠ 0 L_n(z) = stieltjes(U_n, z)
     # where U_n(z) = ∫_1^x T_n(x)/sqrt(1-x^2) dx = -(1-x^2)^(-1/2)T_{n-1}(x)/n
     # We have the 3-term recurrence
@@ -92,20 +98,22 @@ function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevT}, z::Number)
     # == -(1-x^2)^(-1/2) * ( 2n/(n+1) x T_{n-1}(x)/n -  (n-1)/(n+1) T_{n-2}(x)/(n-1))
     # == (2n/(n+1)  * x  U_n(x) -  (n - 1)/(n+1) * U_{n-1}(x)
 
-    R = real(V)
+    R = real(promote_type(eltype(wP), typeof(z)))
     n = zero(R):∞
-    A = (convert(R,2)*n) ./ (n .+ one(R))
-    B = Zeros{R}(∞)
-    C = (n .- one(R)) ./ (n .+ one(R))
-    transpose(RecurrenceArray(z, (A, B, C), [r0,r1,r2]))
+    (2n) ./ (n .+ 1), Zeros{R}(∞), (n .- 1) ./ (n .+ 1)
 end
 
-function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevU}, z::Number)
+
+function complexlogkernel_ics(wP::Weighted{<:Any,<:ChebyshevU}, z::Number)
     T = promote_type(eltype(wP), typeof(z))
     ξ = inv(z + sqrtx2(z))
     r0 = convert(T,π)*(ξ^2/4 - (log.(abs.(ξ)) + log(2*one(T)))/2)
     r1 = convert(T,π)*(ξ^3/3 - ξ)/2
     r2 = convert(T,π)*(ξ^4/4 - ξ^2/2)/2
+    r0,r1,r2
+end
+
+function complexlogkernel_recurrence(wP::Weighted{<:Any,<:ChebyshevU}, z::Number)
     # We have for n ≠ 0 L_n(z) = stieltjes(U_n, z)
     # where U_n(z) = ∫_1^x sqrt(1-x^2) U_n(x) dx = -(1-x^2)^(3/2)C_{n-1}(x) * 2/(n * (n + 2))
     # where C_n(x) = C_n^{(2)}(x)
@@ -118,18 +126,20 @@ function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevU}, z::Number)
     # == -(1-x^2)^(3/2) *  (2 (n-1)*(n+1) / (n*(n+3))  * x  2/((n-1)*(n+1)) C_{n-1}(x) -  (n + 2)*(n-1) /(n*(n+3)) * 2/((n-1)*(n+1)) C_{n-2}(x))
     # == (2 (n+2)/(n+3)  * x  U_n(x) -  (n + 2)*(n-1) /(n*(n+3)) * U_{n-1}(x)
 
-    n = zero(real(T)):∞
-    A = (2*(n .+ 2)) ./ (n .+ 3)
-    B = Zeros{real(T)}(∞)
-    C =  (n .+ 2) .* (n .- 1) ./ (n .* (n .+ 3))
-    transpose(RecurrenceArray(z, (A, B, C), [r0,r1,r2]))
+    R = real(promote_type(eltype(wP), typeof(z)))
+    n = zero(R):∞
+    (2*(n .+ 2)) ./ (n .+ 3), Zeros{R}(∞), (n .+ 2) .* (n .- 1) ./ (n .* (n .+ 3))
 end
 
-function complexlogkernel(P::Weighted{<:Any,<:Legendre}, z::Number)
+function complexlogkernel_ics(P::Weighted{<:Any,<:Legendre}, z::Number)
     T = promote_type(eltype(P), typeof(z))
     r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
     r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
     r2 = z*r1 + 2*one(T)/3
+    r0,r1,r2
+end
+
+function complexlogkernel_recurrence(wP::Weighted{<:Any,<:Legendre}, z::Number)
     # We have for n ≠ 0 L_n(z) = stieltjes(U_n, z)
     # where U_n(z) = ∫_1^x P_n(x) dx = C_{n+1}^{(-1/2)}(x)
     # Since these are equivalent to weihted OPs (1-x^2)C_{n-1}^(3/2)(x)
@@ -137,9 +147,8 @@ function complexlogkernel(P::Weighted{<:Any,<:Legendre}, z::Number)
     # Thus the following could also be written:
     # A,B,C = recurrencecoefficients(Ultraspherical(-1/2))
     # A[2:end],B[2:end],C[2:end]
-
-    A,B,C = ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞))
-    transpose(RecurrenceArray(z, (A, B, C), [r0,r1,r2]))
+    R = real(promote_type(eltype(wP), typeof(z)))
+    ((one(R):2:∞)./(2:∞), Zeros{R}(∞), (-one(R):∞)./(2:∞))
 end
 
 function complexlogkernel(P::Weighted{<:Any,<:Legendre}, zs::AbstractVector)
