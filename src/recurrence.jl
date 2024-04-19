@@ -166,3 +166,8 @@ function view(A::RecurrenceVector, kr::AbstractVector)
     resizedata!(A, maximum(kr))
     view(A.data, kr)
 end
+
+###
+# broadcasted
+###
+broadcasted(::LazyArrayStyle, op, A::Transpose{<:Any,<:RecurrenceArray}) = transpose(op.(parent(A)))
