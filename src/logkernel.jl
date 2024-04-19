@@ -41,7 +41,8 @@ applies the log kernel log(x-t) to the columns of a quasi matrix, i.e., `(log.(x
 complexlogkernel(P, z...) = complexlogkernel_layout(MemoryLayout(P), P, z...)
 
 logkernel(wT::Weighted{T,<:ChebyshevT}) where T = ChebyshevT{T}() * Diagonal(Vcat(-convert(T,π)*log(2*one(T)),-convert(T,π)./(1:∞)))
-function logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::AbstractQuasiMatrix{V}) where V
+function logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT)
+    V = eltype(wT)
     kr = basismap(wT)
     @assert kr isa AbstractAffineQuasiVector
     W = demap(wT)
@@ -53,8 +54,7 @@ function logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::Abst
     unweighted(wT) * Diagonal(Vcat(-convert(V,π)*(log(2*one(V))+log(abs(A)))/A,-convert(V,π) ./ (A * (1:∞))))
 end
 
-
-function logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::AbstractQuasiMatrix{V}, z::Number) where V
+function logkernel_demap(wT, z)
     P = demap(wT)
     kr = basismap(wT)
     z̃ = inbounds_getindex(kr, z)
@@ -64,6 +64,9 @@ function logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::Abst
     transpose(c*transpose(LP) + c*log(c)*vec(Σ))
 end
 
+
+logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT, z::Number) = logkernel_demap(wT, z)
+logkernel_layout(::WeightedOPLayout{MappedOPLayout}, wT, z::Real) = logkernel_demap(wT, z)
 
 
 
@@ -99,7 +102,7 @@ function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevU}, z::Number)
     transpose(RecurrenceArray(z, (A, B, C), [r0,r1,r2]))
 end
 
-function complexlogkernel(P::Legendre, z::Number)
+function complexlogkernel(P::Weighted{<:Any,<:Legendre}, z::Number)
     T = promote_type(eltype(P), typeof(z))
     r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
     r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
@@ -116,7 +119,7 @@ function complexlogkernel(P::Legendre, z::Number)
     transpose(RecurrenceArray(z, (A, B, C), [r0,r1,r2]))
 end
 
-function complexlogkernel(P::Legendre, zs::AbstractVector)
+function complexlogkernel(P::Weighted{<:Any,<:Legendre}, zs::AbstractVector)
     T = promote_type(eltype(P), eltype(zs))
     m = length(zs)
     data = Matrix{T}(undef, 3, m)
@@ -131,17 +134,17 @@ function complexlogkernel(P::Legendre, zs::AbstractVector)
     transpose(RecurrenceArray(zs, ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞)), data))
 end
 
+complexlogkernel(P::Legendre, z...) = complexlogkernel(Weighted(P), z...)
 
-logkernel(P::Legendre, z) = real.(complexlogkernel(P, complex(z)))
 
-function logkernel(P::Legendre, x::Real)
-    T = promote_type(eltype(P), typeof(x))
-    z = complex(x)
-    r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
-    r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
-    r2 = z*r1 + 2*one(T)/3
-    transpose(RecurrenceArray(x, ((one(real(T)):2:∞)./(2:∞), Zeros{real(T)}(∞), (-one(real(T)):∞)./(2:∞)), [real(r0),real(r1),real(r2)]))
+logkernel_layout(::AbstractBasisLayout, P, z...) = real.(complexlogkernel(P, z...))
+
+function logkernel_layout(::WeightedOPLayout, P, x::Real)
+    L = transpose(complexlogkernel(P, complex(x)))
+    transpose(RecurrenceArray(x, (L.A, L.B, L.C), real.(L.data)))
 end
+
+logkernel(P::Legendre, x...) = logkernel(Weighted(P), x...)
 
 function logkernel(P::Legendre, x::AbstractVector{<:Real})
     T = promote_type(eltype(P), eltype(x))

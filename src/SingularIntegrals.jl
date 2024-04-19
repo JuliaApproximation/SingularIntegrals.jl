@@ -2,7 +2,7 @@ module SingularIntegrals
 using ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, LazyArrays, LazyBandedMatrices, FillArrays, BandedMatrices, LinearAlgebra, SpecialFunctions, HypergeometricFunctions, InfiniteArrays
 using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector, inbounds_getindex, broadcastbasis, MappedBasisLayouts, MemoryLayout, MappedWeightLayout, AbstractWeightLayout, ExpansionLayout, demap, basismap, AbstractBasisLayout, SubBasisLayout
 using QuasiArrays: AbstractQuasiMatrix, BroadcastQuasiMatrix, LazyQuasiArrayStyle, AbstractQuasiVecOrMat
-import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, Clenshaw, chop, initiateforwardrecurrence, MappedOPLayouts, unweighted
+import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, Clenshaw, chop, initiateforwardrecurrence, MappedOPLayouts, unweighted, WeightedOPLayout, MappedOPLayout
 using LazyBandedMatrices: Tridiagonal, SymTridiagonal, subdiagonaldata, supdiagonaldata, diagonaldata, ApplyLayout
 import LazyArrays: AbstractCachedMatrix, AbstractCachedArray, paddeddata, arguments, resizedata!, cache_filldata!, zero!, cacheddata, LazyArrayStyle
 import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy, tail, view
@@ -31,8 +31,6 @@ for Op in (:Stieltjes, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :Log
     end
 end
 
-
-logkernel_layout(::AbstractBasisLayout, P, z...) = real.(complexlogkernel(P, z...))
 
 for lk in (:complexlogkernel, :stieltjes)
     lk_layout = Symbol(lk, :_layout)
