@@ -24,6 +24,9 @@ const RecurrenceMatrix{T, Z<:AbstractVector, A<:AbstractVector, B<:AbstractVecto
 function RecurrenceArray(z::Number, (A,B,C), data::AbstractVector{T}) where T
     N = length(data)
     p0, p1 = initiateforwardrecurrence(N, A, B, C, z, one(z))
+    if iszero(p1)
+        p1 = one(p1) # avoid degeneracy in recurrence. Probably needs more thought
+    end
     RecurrenceVector{T,typeof(A),typeof(B),typeof(C)}(z, A, B, C, data, size(data), T[p0], T[p1], T[])
 end
 
@@ -33,6 +36,9 @@ function RecurrenceArray(z::AbstractVector, (A,B,C), data::AbstractMatrix{T}) wh
     p1 = Vector{T}(undef, N)
     for j = axes(z,1)
         p0[j], p1[j] = initiateforwardrecurrence(M, A, B, C, z[j], one(T))
+        if iszero(p1[j])
+            p1[j] = one(p1[j]) # avoid degeneracy in recurrence. Probably needs more thought
+        end
     end
     RecurrenceMatrix{T,typeof(z),typeof(A),typeof(B),typeof(C)}(z, A, B, C, data, size(data), p0, p1, T[])
 end

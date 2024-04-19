@@ -55,6 +55,10 @@ end
         t = 0.5+0im
         @test (log.(abs.(t .- x') )* Weighted(T))[1,1:3] ≈ [-2.1775860903036017, -1.5707963267948832, 0.7853981633974272] #mathematica
         @test (log.(abs.(t .- x') )* Weighted(U))[1,1:3] ≈ [-1.4814921268505252, -1.308996938995747, 0.19634954084936207] #mathematica
+
+       
+        # checks for degeneracy in recurrence initial conditions
+        @test iszero(logkernel(Weighted(T), 10.3)[100])
     end
 
     @testset "mapped" begin
