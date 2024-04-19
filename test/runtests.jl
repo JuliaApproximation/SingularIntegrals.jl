@@ -1,6 +1,6 @@
 using SingularIntegrals, ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, BandedMatrices, LinearAlgebra, Test
 using SingularIntegrals: Stieltjes, StieltjesPoint, ChebyshevInterval, associated, Associated,
-        orthogonalityweight, Weighted, *, dot, LogKernelPoint
+        orthogonalityweight, Weighted, *, dot
 using LazyArrays: MemoryLayout, PaddedLayout, colsupport, rowsupport, paddeddata
 using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths
 

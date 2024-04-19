@@ -2,9 +2,9 @@ module SingularIntegrals
 using ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, LazyArrays, LazyBandedMatrices, FillArrays, BandedMatrices, LinearAlgebra, SpecialFunctions, HypergeometricFunctions, InfiniteArrays
 using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector, inbounds_getindex, broadcastbasis, MappedBasisLayouts, MemoryLayout, MappedWeightLayout, AbstractWeightLayout, ExpansionLayout, demap, basismap, AbstractBasisLayout, SubBasisLayout
 using QuasiArrays: AbstractQuasiMatrix, BroadcastQuasiMatrix, LazyQuasiArrayStyle, AbstractQuasiVecOrMat
-import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, Clenshaw, chop, initiateforwardrecurrence, MappedOPLayouts, unweighted
+import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, Clenshaw, chop, initiateforwardrecurrence, MappedOPLayouts, unweighted, WeightedOPLayout, MappedOPLayout
 using LazyBandedMatrices: Tridiagonal, SymTridiagonal, subdiagonaldata, supdiagonaldata, diagonaldata, ApplyLayout
-import LazyArrays: AbstractCachedMatrix, AbstractCachedArray, paddeddata, arguments, resizedata!, cache_filldata!, zero!, cacheddata
+import LazyArrays: AbstractCachedMatrix, AbstractCachedArray, paddeddata, arguments, resizedata!, cache_filldata!, zero!, cacheddata, LazyArrayStyle
 import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy, tail, view
 import LinearAlgebra: dot
 using BandedMatrices: _BandedMatrix
@@ -32,12 +32,15 @@ for Op in (:Stieltjes, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :Log
 end
 
 
+for lk in (:complexlogkernel, :stieltjes)
+    lk_layout = Symbol(lk, :_layout)
+    @eval $lk_layout(::AbstractBasisLayout, P, z...) = error("not implemented")
+end
 
 # general routines
 for lk in (:logkernel, :complexlogkernel, :stieltjes)
     lk_layout = Symbol(lk, :_layout)
     @eval begin
-        $lk_layout(::AbstractBasisLayout, P, z...) = error("not implemented")
         $lk_layout(::AbstractWeightLayout, w, zs::AbstractVector) = [stieltjes(w, z) for z in zs]
         function $lk_layout(::AbstractWeightLayout, w, z::Inclusion)
             axes(w,1) == z || error("Not implemented")
