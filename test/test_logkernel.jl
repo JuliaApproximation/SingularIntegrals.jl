@@ -34,19 +34,26 @@ end
         @test (L * wU)[1:5] ≈ [  -1.2919202947616695, -0.20965486677056738, 0.6799687631764493, 0.13811497572177128, -0.2289481463304956]
 
         @test L * (wU / wU \ @.(exp(x) * sqrt(1 - x^2))) ≈ -1.4812979070884382
+
+        wT = Weighted(ChebyshevT())
+        @test L * (wT / wT \ @.(exp(x) / sqrt(1 - x^2))) ≈ -1.9619040529776954 #mathematica
     end
 
     @testset "Real point" begin
+        T = ChebyshevT()
         U = ChebyshevU()
         x = axes(U,1)
 
         t = 2.0
+        @test (log.(abs.(t .- x') )* Weighted(T))[1,1:3] ≈ [1.9597591637624774, -0.8417872144769223, -0.11277810215896047] #mathematica
         @test (log.(abs.(t .- x') )* Weighted(U))[1,1:3] ≈ [1.0362686329607178,-0.4108206734393296, -0.054364775221816465] #mathematica
 
         t = 0.5
+        @test (log.(abs.(t .- x') )* Weighted(T))[1,1:3] ≈ [-2.1775860903036017, -1.5707963267948832, 0.7853981633974272] #mathematica
         @test (log.(abs.(t .- x') )* Weighted(U))[1,1:3] ≈ [-1.4814921268505252, -1.308996938995747, 0.19634954084936207] #mathematica
 
         t = 0.5+0im
+        @test (log.(abs.(t .- x') )* Weighted(T))[1,1:3] ≈ [-2.1775860903036017, -1.5707963267948832, 0.7853981633974272] #mathematica
         @test (log.(abs.(t .- x') )* Weighted(U))[1,1:3] ≈ [-1.4814921268505252, -1.308996938995747, 0.19634954084936207] #mathematica
     end
 

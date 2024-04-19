@@ -76,6 +76,30 @@ logkernel_layout(::WeightedOPLayout{MappedOPLayout}, wT, z::Real) = logkernel_de
 # LogKernelPoint
 ####
 
+function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevT}, z::Number)
+    V = promote_type(eltype(wP), typeof(z))
+    ξ = inv(z + sqrtx2(z))
+    r0 = convert(V,π)*(-log(ξ)-log(convert(V,2)))
+    r1 = -convert(V,π)*ξ
+    r2 = convert(V,π)/2 + z*r1
+    # We have for n ≠ 0 L_n(z) = stieltjes(U_n, z)
+    # where U_n(z) = ∫_1^x T_n(x)/sqrt(1-x^2) dx = -(1-x^2)^(-1/2)T_{n-1}(x)/n
+    # We have the 3-term recurrence
+    # T_{n+1}(x) == 2 x T_n(x) -  T_{n-1}(x)
+    # Thus
+    # U_{n+1}(x) == -(1-x^2)^(-1/2) T_n(x)/(n+1)
+    # == -(1-x^2)^(-1/2) * ( 2x T_{n-1}(x) - T_{n-2}(x))/(n+1)
+    # == -(1-x^2)^(-1/2) * ( 2n/(n+1) x T_{n-1}(x)/n -  (n-1)/(n+1) T_{n-2}(x)/(n-1))
+    # == (2n/(n+1)  * x  U_n(x) -  (n - 1)/(n+1) * U_{n-1}(x)
+
+    R = real(V)
+    n = zero(R):∞
+    A = (convert(R,2)*n) ./ (n .+ one(R))
+    B = Zeros{R}(∞)
+    C = (n .- one(R)) ./ (n .+ one(R))
+    transpose(RecurrenceArray(z, (A, B, C), [r0,r1,r2]))
+end
+
 function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevU}, z::Number)
     T = promote_type(eltype(wP), typeof(z))
     ξ = inv(z + sqrtx2(z))
@@ -83,7 +107,6 @@ function complexlogkernel(wP::Weighted{<:Any,<:ChebyshevU}, z::Number)
     r1 = convert(T,π)*(ξ^3/3 - ξ)/2
     r2 = convert(T,π)*(ξ^4/4 - ξ^2/2)/2
     # We have for n ≠ 0 L_n(z) = stieltjes(U_n, z)
-    # We have diff( /2
     # where U_n(z) = ∫_1^x sqrt(1-x^2) U_n(x) dx = -(1-x^2)^(3/2)C_{n-1}(x) * 2/(n * (n + 2))
     # where C_n(x) = C_n^{(2)}(x)
     # We have the 3-term recurrence
