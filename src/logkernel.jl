@@ -1,5 +1,7 @@
 const ComplexLogKernelPoint{T,C,W<:Number,V,D} = BroadcastQuasiMatrix{T,typeof(log),Tuple{ConvKernel{C,W,V,D}}}
+const ComplexLogKernelPoints{T,C,W<:AbstractVector{<:Number},V,D} = BroadcastQuasiMatrix{T,typeof(log),Tuple{ConvKernel{C,W,V,D}}}
 const LogKernelPoint{T<:Real,C,W<:Number,V,D} = BroadcastQuasiMatrix{T,typeof(log),Tuple{BroadcastQuasiMatrix{T,typeof(abs),Tuple{ConvKernel{C,W,V,D}}}}}
+const LogKernelPoints{T<:Real,C,W<:AbstractVector{<:Number},V,D} = BroadcastQuasiMatrix{T,typeof(log),Tuple{BroadcastQuasiMatrix{T,typeof(abs),Tuple{ConvKernel{C,W,V,D}}}}}
 const LogKernel{T,D1,D2} = BroadcastQuasiMatrix{T,typeof(log),Tuple{BroadcastQuasiMatrix{T,typeof(abs),Tuple{ConvKernel{T,Inclusion{T,D1},T,D2}}}}}
 
 
@@ -14,7 +16,20 @@ end
     logkernel(convert(AbstractQuasiArray{T}, P), z)
 end
 
+@simplify function *(L::LogKernelPoints, P::AbstractQuasiVecOrMat)
+    T = promote_type(eltype(L), eltype(P))
+    z, xc = L.args[1].args[1].args
+    logkernel(convert(AbstractQuasiArray{T}, P), z)
+end
+
+
 @simplify function *(L::ComplexLogKernelPoint, P::AbstractQuasiVecOrMat)
+    z, xc = L.args[1].args
+    T = promote_type(eltype(L), eltype(P))
+    complexlogkernel(convert(AbstractQuasiArray{T}, P), z)
+end
+
+@simplify function *(L::ComplexLogKernelPoints, P::AbstractQuasiVecOrMat)
     z, xc = L.args[1].args
     T = promote_type(eltype(L), eltype(P))
     complexlogkernel(convert(AbstractQuasiArray{T}, P), z)
@@ -61,11 +76,11 @@ function logkernel_demap(wT, z)
     c = inv(kr.A)
     LP = logkernel(P, z̃)
     Σ = sum(P; dims=1)
-    transpose(c*transpose(LP) + c*log(c)*vec(Σ))
+    transpose(c*transpose(LP) .+ c*log(c)*vec(Σ))
 end
 
 
-logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT, z::Number) = logkernel_demap(wT, z)
+logkernel_layout(::Union{MappedBasisLayouts, MappedOPLayouts}, wT, z...) = logkernel_demap(wT, z...)
 logkernel_layout(::WeightedOPLayout{MappedOPLayout}, wT, z::Real) = logkernel_demap(wT, z)
 
 
