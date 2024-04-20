@@ -13,6 +13,10 @@ using ClassicalOrthogonalPolynomials: affine
     for z in (5, 1+2im, -1+2im, 1-2im, -3+0.0im, -3-0.0im)
         @test (log.(z .- x') * P)[1:5] ≈ L.(z, 0:4)
     end
+
+    for z in ([2.1,3.], [2.1+im,-3-im])
+        @test (log.(z .- x') * P)[:,1:5] ≈ L.(z, (0:4)')
+    end
     
     for z in (-5,-1,0,0.1)
         @test_throws DomainError log.(z .- x') * P
@@ -74,6 +78,15 @@ end
         wU = Weighted(chebyshevu(1..2))
         f = wU / wU \ @.(sqrt(2-x)sqrt(x-1)exp(x))
         @test L*f ≈ 2.2374312398976586 # MAthematica
+
+        @testset "vector" begin
+            z = [3.1,4]
+            wU = Weighted(ChebyshevU())[affine(x, axes(ChebyshevU(),1)),:]
+            c = wU \ @.(sqrt(2-x)sqrt(x-1)exp(x))
+            x = axes(wU,1)
+            @test logkernel(wU, z)[:,1:1000] == (log.(abs.(z .- x')) * wU)[:,1:1000]
+            @test logkernel(wU, z) * c ≈ [logkernel(wU, 3.1)*c, logkernel(wU, 4)*c]
+        end
     end
 
     @testset "Legendre" begin

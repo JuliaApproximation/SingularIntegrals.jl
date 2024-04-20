@@ -21,6 +21,8 @@ end
 const RecurrenceVector{T, A<:AbstractVector, B<:AbstractVector, C<:AbstractVector} = RecurrenceArray{T, 1, T, A, B, C}
 const RecurrenceMatrix{T, Z<:AbstractVector, A<:AbstractVector, B<:AbstractVector, C<:AbstractVector} = RecurrenceArray{T, 2, Z, A, B, C}
 
+RecurrenceArray(z, A, B, C, data::Array{T,N}, datasize, p0, p1) where {T,N} = RecurrenceArray{T,N,typeof(z),typeof(A),typeof(B),typeof(C)}(z, A, B, C, data, datasize, p0, p1, T[])
+
 function RecurrenceArray(z::Number, (A,B,C), data::AbstractVector{T}) where T
     N = length(data)
     p0, p1 = initiateforwardrecurrence(N, A, B, C, z, one(z))
@@ -177,3 +179,29 @@ end
 # broadcasted
 ###
 broadcasted(::LazyArrayStyle, op, A::Transpose{<:Any,<:RecurrenceArray}) = transpose(op.(parent(A)))
+
+broadcasted(::LazyArrayStyle, ::typeof(*), c::Number, A::RecurrenceArray) = RecurrenceArray(A.z, A.A, A.B, A.C, c .* A.data, A.datasize, c .* A.p0, c .* A.p1)
+function recurrence_broadcasted(op, A::RecurrenceMatrix, x::AbstractVector)
+    p = paddeddata(x)
+    n = size(p,1)
+    resizedata!(A, n, size(p,2))
+    data = copy(A.data)
+    data[1:n,:] .+= p
+    RecurrenceArray(A.z, A.A, A.B, A.C, data, A.datasize, A.p0, A.p1)
+end
+
+function recurrence_broadcasted(op, A::RecurrenceVector, x::AbstractVector)
+    p = paddeddata(x)
+    n = size(p,1)
+    resizedata!(A, n)
+    data = copy(A.data)
+    data[1:n] .+= p
+    RecurrenceArray(A.z, A.A, A.B, A.C, data, A.datasize, A.p0, A.p1)
+end
+
+for op in (:+, :-)
+    @eval begin
+        broadcasted(::LazyArrayStyle, ::typeof($op), A::RecurrenceArray, x::AbstractVector) = recurrence_broadcasted($op, A, x)
+        broadcasted(::LazyArrayStyle, ::typeof($op), A::RecurrenceVector, x::Vcat{<:Any,1}) = recurrence_broadcasted($op, A, x)
+    end
+end
