@@ -21,7 +21,7 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 [compat]
 ArrayLayouts = "1.4"
 BandedMatrices = "1"
-ClassicalOrthogonalPolynomials = "0.12"
+ClassicalOrthogonalPolynomials = "0.12, 0.13"
 ContinuumArrays = "0.17.2"
 FastTransforms = "0.15, 0.16"
 FillArrays = "1"
