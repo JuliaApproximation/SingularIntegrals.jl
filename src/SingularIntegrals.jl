@@ -8,7 +8,7 @@ import LazyArrays: AbstractCachedMatrix, AbstractCachedArray, paddeddata, argume
 import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy, tail, view
 import LinearAlgebra: dot
 using BandedMatrices: _BandedMatrix
-using FastTransforms: _forwardrecurrence!, _forwardrecurrence_next
+using RecurrenceRelationships: _forwardrecurrence!, _forwardrecurrence_next
 
 export associated, stieltjes, logkernel, powerkernel, complexlogkernel
 
