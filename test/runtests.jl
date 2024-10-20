@@ -4,7 +4,6 @@ using SingularIntegrals: Stieltjes, StieltjesPoint, ChebyshevInterval, associate
 using LazyArrays: MemoryLayout, PaddedLayout, colsupport, rowsupport, paddeddata
 using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths
 
-include("test_recurrence.jl")
 
 @testset "Associated" begin
     T = ChebyshevT()
