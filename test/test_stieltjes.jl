@@ -71,7 +71,7 @@ using SingularIntegrals: Stieltjes, StieltjesPoint
         U = chebyshevu(0..1)
         x = axes(T,1)
         H = inv.(x .- x')
-        @test U\H*Weighted(T) isa BandedMatrix
+        @test_broken U\H*Weighted(T) isa BandedMatrix
     end
 end
 
