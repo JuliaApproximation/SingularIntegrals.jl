@@ -229,4 +229,12 @@ end
         @test stieltjes(P[:,1], 3) ≈ stieltjes(P,3)[1]
         @test stieltjes(P[:,1:3], 3) ≈ stieltjes(P,3)[:,1:3]
     end
+
+    @testset "negative ultraspherical" begin
+        C = Ultraspherical(-1/2)
+        z = 2
+        
+        @test stieltjes(C, z)[3:10] ≈ -logkernel(Legendre(),z)[2:9]
+        @test logkernel(C, z)[1:10] ≈ complexlogkernel(C, z)[1:10]
+    end
 end
