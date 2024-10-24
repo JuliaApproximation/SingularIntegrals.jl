@@ -114,8 +114,6 @@ function stieltjes(wP::Weighted{<:Any,<:OrthogonalPolynomial})
     (-A[1]*sum(w))*[zero(axes(P,1)) Q] + stieltjes(w) .* P
 end
 
-stieltjes(P::Legendre) = stieltjes(Weighted(P))
-
 
 ##
 # OffStieltjes
@@ -199,6 +197,7 @@ sqrtx2(x::Real) = sign(x)*sqrt(x^2-1)
 
 
 stieltjes(P::Legendre, z...) = stieltjes(Weighted(P), z...)
+stieltjes(J::AbstractJacobi{T}, z...) where T = stieltjes(Legendre{T}(), z...) * (Legendre{T}() \ J)
 
 @simplify function *(S::StieltjesPoints, wP::Weighted)
     z = S.args[1].args[1] # vector of points to eval at

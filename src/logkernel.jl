@@ -166,6 +166,8 @@ function complexlogkernel_recurrence(wP::Weighted{<:Any,<:Legendre})
 end
 complexlogkernel(P::Legendre, z...) = complexlogkernel(Weighted(P), z...)
 logkernel(P::Legendre, x...) = logkernel(Weighted(P), x...)
+complexlogkernel(J::AbstractJacobi{T}, z...) where T = complexlogkernel(Legendre{T}(), z...) * (Legendre{T}() \ J)
+logkernel(J::AbstractJacobi{T}, z...) where T = logkernel(Legendre{T}(), z...) * (Legendre{T}() \ J)
 
 
 
