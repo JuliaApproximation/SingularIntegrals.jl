@@ -1,7 +1,7 @@
 name = "SingularIntegrals"
 uuid = "d7440221-8b5e-42fc-909c-0567823f424a"
 authors = ["Sheehan Olver <solver@mac.com>"]
-version = "0.3.2"
+version = "0.3.3"
 
 [deps]
 ArrayLayouts = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
