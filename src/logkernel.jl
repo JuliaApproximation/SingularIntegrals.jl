@@ -42,7 +42,7 @@ end
 """
     logkernel(P)
 
-applies the log kernel log(abs(x-t)) to the columns of a quasi matrix, i.e., `(log.(abs.(x - x')) * P)/π`
+applies the log kernel log(abs(x-t)) to the columns of a quasi matrix, i.e., `(log.(abs.(x - x')) * P)`
 """
 logkernel(P, z...) = logkernel_layout(MemoryLayout(P), P, z...)
 
@@ -145,10 +145,12 @@ function complexlogkernel_recurrence(wP::Weighted{<:Any,<:ChebyshevU})
     (2*(n .+ 2)) ./ (n .+ 3), Zeros{R}(∞), (n .+ 2) .* (n .- 1) ./ (n .* (n .+ 3))
 end
 
+
+zlog(z) = ifelse(iszero(z), z, z*log(z))
 function complexlogkernel_ics(P::Weighted{<:Any,<:Legendre}, z::Number)
     T = promote_type(eltype(P), typeof(z))
-    r0 = (1 + z)log(1 + z) - (z-1)log(z-1) - 2one(T)
-    r1 = (z+1)*r0/2 + 1 - (z+1)log(z+1)
+    r0 = zlog(1 + z) - zlog(z-1) - 2one(T)
+    r1 = (z+1)*r0/2 + 1 - zlog(z+1)
     r2 = z*r1 + 2*one(T)/3
     r0,r1,r2
 end
