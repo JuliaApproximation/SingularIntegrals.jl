@@ -26,6 +26,13 @@ using ClassicalOrthogonalPolynomials: affine
         @test complexlogkernel(exp.(x), 2 + im) ≈ sum(log.((2+im) .- x) .* exp.(x))
         @test_throws ArgumentError complexlogkernel(Jacobi(0.1,0.2), 2+im)
     end
+
+    @testset "endpoints" begin
+        @test complexlogkernel(exp.(x), 1) ≈ logkernel(exp.(x), 1) ≈ -1.9569548200977875
+        @test real(complexlogkernel(exp.(x), -1+0im)) ≈ logkernel(exp.(x), -1) ≈ 0.27395419528475684
+        @test complexlogkernel(exp.(x), -1+0.0im) ≈ 0.27395419528475684+7.38400687288264im
+        @test complexlogkernel(exp.(x), -1-0.0im) ≈ 0.27395419528475684-7.38400687288264im
+    end
 end
 
 @testset "LogKernelPoint" begin
@@ -37,10 +44,12 @@ end
         @test L isa LogKernelPoint{Float64,ComplexF64,ComplexF64,Float64,ChebyshevInterval{Float64}}
         @test (L * wU)[1:5] ≈ [  -1.2919202947616695, -0.20965486677056738, 0.6799687631764493, 0.13811497572177128, -0.2289481463304956]
 
-        @test L * (wU / wU \ @.(exp(x) * sqrt(1 - x^2))) ≈ -1.4812979070884382
+        fU = wU / wU \ @.(exp(x) * sqrt(1 - x^2))
+        @test L * fU ≈ logkernel(fU, z) ≈ -1.4812979070884382
 
         wT = Weighted(ChebyshevT())
-        @test L * (wT / wT \ @.(exp(x) / sqrt(1 - x^2))) ≈ -1.9619040529776954 #mathematica
+        fT = (wT / wT \ @.(exp(x) / sqrt(1 - x^2)))
+        @test L * fT ≈ logkernel(fT, z) ≈ -1.9619040529776954 #mathematica
     end
 
     @testset "Real point" begin
