@@ -88,6 +88,8 @@ computes inv.(y - x') * P understood in a principle value sense.
 """
 stieltjes(P, y...) = stieltjes_layout(MemoryLayout(P), P, y...)
 
+cauchy(f, z...) = stieltjes(f, z...)/(-2convert(eltype(f), π)*im)
+
 """
     stieltjes(P)
 
