@@ -42,13 +42,22 @@ end
 
  φ = (n,x) -> (-1)^n * sqrt(2/π) * (1+2im*x)^n / (1-2im*x)^(n+1)
 
-# ∫ exp(-k/2) * laguerrel(n,k) * exp(im*k*x) dx =
-# ∫ exp(-k) * laguerrel(n,k) * exp(k*(im*x+1/2)) dx = 
-# ∫ d/dk(k * exp(-k) * laguerrel(n-1,1,k)) * exp(k*(im*x+1/2)) dx/n = 
-# -∫ k * exp(-k) * laguerrel(n-1,1,k) *d/dk(exp(k*(im*x+1/2))) dx/n = 
-# -∫ k * exp(-k) * laguerrel(n-1,1,k) *exp(k*(im*x+1/2)) dx * (im*x+1/2)/n = 
-# -∫ exp(-k) * (-laguerrel(n,k)+laguerrel(n-1,k))   *exp(k*(im*x+1/2)) dx * (im*x+1/2) = 
+# ∫ exp(-k/2) * L(n,k) * exp(i*k*z)) dx =
+# ∫ exp(-k) * L(n,k) * exp(k*(i*z+1/2)) dx = 
+# ∫ d/dk(k * exp(-k) * L(n-1,1,k)) * exp(k*(i*z+1/2)) dx/n = 
+# -∫ k * exp(-k) * L(n-1,1,k) *d/dk(exp(k*(i*z+1/2))) dx/n = 
+# -∫ k * exp(-k) * L(n-1,1,k) *exp(k*(i*z+1/2)) dx * (i*z+1/2)/n = 
+# -∫ exp(-k) * (-L(n,k)+L(n-1,k))   *exp(k*(i*z+1/2)) dx * (i*z+1/2) = 
 
 n = 2
 @test φ(n,x) ≈ (φ(n,x)-φ(n-1,x)) * (im*x+1/2)
 @test φ(n,x)≈ φ(n-1,x) * (im*x+1/2)/(im*x-1/2)
+
+# F^{-1}[φ] = 1/sqrt(2π) * ∫ φ(x) exp(-im*k*z) dx =  exp(-k/2) * L(n,k)
+# F^{-1}[exp(iωx)φ] =  1/sqrt(2π) * ∫ φ(x) exp(i(ω-k)x) dx = exp(-(k-ω)/2) * L(n,k-ω)
+
+
+# ∫_ω sign(k) exp(-k/2) * L(n,k) * exp(im*k*x) dx =
+# ∫_ω sign(k) exp(-k) * L(n,k) * exp(k*(im*x+1/2)) dx = 
+# ∫_ω d/dk(k * exp(-k) * L(n-1,1,k)) * exp(k*(im*x+1/2)) dx/n = 
+# -ω*exp(-ω) -∫ k * exp(-k) * L(n-1,1,k) *d/dk(exp(k*(im*z+1/2))) dx/n = 
