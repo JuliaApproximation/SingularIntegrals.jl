@@ -20,7 +20,7 @@ include("power.jl")
 
 
 ### generic fallback
-for Op in (:Hilbert, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :LogKernel)
+for Op in (:PVStieltjes, :Stieltjes, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :LogKernel)
     @eval begin
         @simplify function *(H::$Op, wP::WeightedBasis{<:Any,<:Weight,<:Any})
             w,P = wP.args
