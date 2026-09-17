@@ -1,6 +1,6 @@
 name = "SingularIntegrals"
 uuid = "d7440221-8b5e-42fc-909c-0567823f424a"
-version = "0.3.10"
+version = "0.4"
 authors = ["Sheehan Olver <solver@mac.com>"]
 
 [deps]

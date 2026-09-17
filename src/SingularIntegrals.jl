@@ -11,7 +11,7 @@ using BandedMatrices: _BandedMatrix
 using RecurrenceRelationshipArrays
 using RecurrenceRelationshipArrays: Clenshaw
 
-export associated, stieltjes, cauchy, logkernel, powerkernel, complexlogkernel
+export associated, stieltjes, cauchy, hilbert, logkernel, powerkernel, complexlogkernel
 
 
 include("stieltjes.jl")
@@ -20,7 +20,7 @@ include("power.jl")
 
 
 ### generic fallback
-for Op in (:Stieltjes, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :LogKernel)
+for Op in (:Hilbert, :StieltjesPoint, :LogKernelPoint, :PowerKernelPoint, :LogKernel)
     @eval begin
         @simplify function *(H::$Op, wP::WeightedBasis{<:Any,<:Weight,<:Any})
             w,P = wP.args
