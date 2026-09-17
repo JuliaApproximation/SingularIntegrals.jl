@@ -11,7 +11,7 @@ using BandedMatrices: _BandedMatrix
 using RecurrenceRelationshipArrays
 using RecurrenceRelationshipArrays: Clenshaw
 
-export associated, stieltjes, logkernel, powerkernel, complexlogkernel
+export associated, stieltjes, cauchy, logkernel, powerkernel, complexlogkernel
 
 
 include("stieltjes.jl")
