@@ -74,6 +74,11 @@ using SingularIntegrals: PVStieltjes, StieltjesPoint
         H = pinv.(x .- x')
         @test U\H*Weighted(T) isa BandedMatrix
     end
+
+    @testset "jacobi" begin
+        P = Jacobi(1,2)
+        @test hilbert(P, 0.1)[1:10] ≈ (stieltjes(P, 0.1+0im)[1:10] + stieltjes(P, 0.1-0im)[1:10])/2π
+    end
 end
 
 @testset "StieltjesPoint" begin
