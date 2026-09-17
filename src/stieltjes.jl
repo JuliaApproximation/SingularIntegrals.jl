@@ -70,7 +70,7 @@ const PVStieltjesPoints{T,W<:AbstractVector{<:Number},V,D} = BroadcastQuasiMatri
 
 @simplify function *(H::PVStieltjes, w::AbstractQuasiVecOrMat)
     T = promote_type(eltype(H), eltype(w))
-    π*hilbert(convert(AbstractQuasiArray{T}, w))
+    convert(T,π)*hilbert(convert(AbstractQuasiArray{T}, w))
 end
 
 @simplify function *(H::Stieltjes, w::AbstractQuasiMatrix)
@@ -313,14 +313,10 @@ end
 ###
 
 
-function stieltjes(W::PiecewiseInterlace)
-    Hs = broadcast(function(a,b)
-                x,t = axes(a,1),axes(b,1)
-                H = stieltjes(b, x)
-                H
-            end, [W.args...], permutedims([W.args...]))
+function hilbert(W::PiecewiseInterlace{T}) where T
+    Hs = [a == b ? hilbert(a) : stieltjes(b, axes(a,1))/convert(T,π) for a in W.args, b in W.args]
     N = length(W.args)
-    Ts = [broadcastbasis(+, broadcast(H -> H.args[1], Hs[k,:])...) for k=1:N]
+    Ts = [broadcastbasis(+, map(basis, Hs[k,:])...) for k=1:N]
     Ms = broadcast((T,H) -> unitblocks(T\H), Ts, Hs)
     PiecewiseInterlace(Ts...) * BlockBroadcastArray{eltype(W)}(hvcat, N, permutedims(Ms)...)
 end
@@ -331,5 +327,13 @@ function stieltjes(S::PiecewiseInterlace, z::Number)
     a,b = S.args
     Sa = stieltjes(a, z)
     Sb = stieltjes(b, z)
+    transpose(BlockBroadcastArray(vcat, unitblocks(transpose(Sa)), unitblocks(transpose(Sb))))
+end
+
+function hilbert(S::PiecewiseInterlace, z::Number)
+    @assert length(S.args) == 2
+    a,b = S.args
+    Sa = z in axes(a,1) ? hilbert(a, z) : stieltjes(a, z)/π
+    Sb = z in axes(b,1) ? hilbert(b, z) : stieltjes(b, z)/π
     transpose(BlockBroadcastArray(vcat, unitblocks(transpose(Sa)), unitblocks(transpose(Sb))))
 end

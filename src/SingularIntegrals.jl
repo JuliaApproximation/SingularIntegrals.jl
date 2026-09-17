@@ -38,7 +38,7 @@ for lk in (:complexlogkernel, :stieltjes)
 end
 
 # general routines
-for lk in (:logkernel, :complexlogkernel, :stieltjes)
+for lk in (:hilbert, :logkernel, :complexlogkernel, :stieltjes)
     lk_layout = Symbol(lk, :_layout)
     @eval begin
         $lk_layout(::AbstractWeightLayout, w, zs::AbstractVector) = [stieltjes(w, z) for z in zs]

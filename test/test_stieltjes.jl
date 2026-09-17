@@ -2,7 +2,7 @@ using SingularIntegrals, ClassicalOrthogonalPolynomials, QuasiArrays, BandedMatr
 using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, paddeddata, colsupport, rowsupport
 using LazyArrays: PaddedLayout
 using ClassicalOrthogonalPolynomials: orthogonalityweight
-using SingularIntegrals: Hilbert, StieltjesPoint
+using SingularIntegrals: PVStieltjes, StieltjesPoint
 
 @testset "Stieltjes" begin
     @testset "weights" begin
@@ -34,7 +34,7 @@ using SingularIntegrals: Hilbert, StieltjesPoint
         wU = Weighted(ChebyshevU())
         x = axes(wT,1)
         H = pinv.(x .- x')
-        @test H isa Hilbert{Float64,ChebyshevInterval{Float64}}
+        @test H isa PVStieltjes{Float64,ChebyshevInterval{Float64}}
 
         @test (Ultraspherical(1) \ (H*wT))[1:10,1:10] == diagm(1 => fill(-π,9))
         @test (Chebyshev() \ (H*wU))[1:10,1:10] == diagm(-1 => fill(1.0π,9))
