@@ -41,7 +41,7 @@ end
 for lk in (:hilbert, :logkernel, :complexlogkernel, :stieltjes)
     lk_layout = Symbol(lk, :_layout)
     @eval begin
-        $lk_layout(::AbstractWeightLayout, w, zs::AbstractVector) = [stieltjes(w, z) for z in zs]
+        $lk_layout(::AbstractWeightLayout, w, zs::AbstractVector) = [$lk(w, z) for z in zs]
         function $lk_layout(::AbstractWeightLayout, w, z::Inclusion)
             axes(w,1) == z || error("Not implemented")
             $lk(w)

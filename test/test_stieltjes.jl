@@ -158,6 +158,21 @@ end
         @test (S * P)[:,1:5] ≈ [(inv.(2 .- x')*P)[1:5]'; (inv.(3 .- x')*P)[1:5]']
 
         @test S * JacobiWeight(0.1,0.2) == stieltjes.(Ref(JacobiWeight(0.1,0.2)), z)
+
+        @testset "mapped" begin
+            P = legendre(0..1)
+            z = [2.0, 3.0+im, -1.0]
+            Sz = stieltjes(P, z)
+            for k in eachindex(z)
+                @test Sz[k,1:10] ≈ stieltjes(P, z[k])[1:10]
+            end
+            t = [0.1, 0.5]
+            Ht = hilbert(P, t)
+            for k in eachindex(t)
+                @test Ht[k,1:10] ≈ hilbert(P, t[k])[1:10]
+            end
+            @test hilbert(LegendreWeight(), t) == hilbert.(Ref(LegendreWeight()), t)
+        end
     end
 end
 

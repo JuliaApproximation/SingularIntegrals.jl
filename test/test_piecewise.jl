@@ -60,6 +60,12 @@ using ClassicalOrthogonalPolynomials, SingularIntegrals, Test
         @test log.(abs.(t .- x'))*f ≈ -5.9907385495482821485
         @test log.(abs.(z .- x'))*f ≈ 6.523123127595374
         @test log.(abs.((-z) .- x'))*f ≈ 8.93744698863906
+
+        zs = [5.0, 3.0+im]
+        Sz = stieltjes(W, zs)
+        for k in eachindex(zs)
+            @test Sz[k,1:10] ≈ stieltjes(W, zs[k])[1:10]
+        end
     end
 end
 
