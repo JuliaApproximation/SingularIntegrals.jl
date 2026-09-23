@@ -182,7 +182,8 @@ stieltjesmoment_jacobi_normalization(n::Int,α::Real,β::Real) = 2^(α+β)*gamma
 
 function stieltjes(w::AbstractJacobiWeight, z::Number)
     α,β = real(w.a),real(w.b)
-    (x = 2/(1-z);stieltjesmoment_jacobi_normalization(0,α,β)*HypergeometricFunctions.mxa_₂F₁(1,α+1,α+β+2,x))
+    x = 2/(1-z)
+    stieltjesmoment_jacobi_normalization(0,α,β)*HypergeometricFunctions.mxa_₂F₁(1,α+1,α+β+2,x)
 end
 
 stieltjes(w::ChebyshevTWeight{T}, z::Number) where T = convert(T, π)/sqrtx2(z)
@@ -229,12 +230,14 @@ for stiel in (:stieltjes, :hilbert)
         end
 
         function $stiel(wP::Weighted, z::AbstractVector)
-            T = promote_type(eltype(z), eltype(wP))
             P = wP.P
             A,B,C = recurrencecoefficients(P)
             w = orthogonalityweight(P)
+            data1 = $stiel(w, z)
+            μ = _p0(P)
+            T = promote_type(eltype(data1), typeof(μ))
             data = Matrix{T}(undef, 2, length(z))
-            data[1,:] .= $stiel(w, z) .* _p0(P)
+            data[1,:] .= data1 .* μ
             data[2,:] .= (A[1] .* z .+ B[1]) .* data[1,:] .- (A[1]_stielsum($stiel, w)*_p0(P))
             transpose(RecurrenceArray(z, (A,B,C), data))
         end
@@ -266,7 +269,9 @@ end
 # mapped
 ###
 
-for (stiel, stiel_lay) in ((:stieltjes, :stieltjes_layout), (:hilbert, :hilbert_layout))
+const extrapolate = inbounds_getindex # TODO: bad pun?
+
+for (stiel, stiel_lay, mapgetind) in ((:stieltjes, :stieltjes_layout, :extrapolate), (:hilbert, :hilbert_layout, :getindex))
     @eval begin
         function $stiel_lay(::MappedWeightLayout, w::SubQuasiArray{<:Any,1})
             m = parentindices(w)[1]
@@ -279,7 +284,7 @@ for (stiel, stiel_lay) in ((:stieltjes, :stieltjes_layout), (:hilbert, :hilbert_
             m = basismap(w)
             # TODO: mapping other geometries
             P = demap(w)
-            $stiel(P, inbounds_getindex(m, z))
+            $stiel(P, $mapgetind(m, z))
         end
 
         $stiel_lay(::Union{MappedBasisLayouts, MappedOPLayouts}, wP::AbstractQuasiMatrix) = $stiel(demap(wP))[basismap(wP),:]
@@ -302,7 +307,17 @@ for (stiel, stiel_lay) in ((:stieltjes, :stieltjes_layout), (:hilbert, :hilbert_
 
         function $stiel_lay(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::AbstractQuasiMatrix, z::Number)
             P = demap(wT)
-            z̃ = inbounds_getindex(basismap(wT), z)
+            m = basismap(wT)
+            @assert m isa AbstractAffineQuasiVector
+            z̃ = $mapgetind(m, z)
+            $stiel(P, z̃)
+        end
+
+        function $stiel_lay(::Union{MappedBasisLayouts, MappedOPLayouts}, wT::AbstractQuasiMatrix, z::AbstractVector)
+            P = demap(wT)
+            m = basismap(wT)
+            @assert m isa AbstractAffineQuasiVector
+            z̃ = $mapgetind(m, z)
             $stiel(P, z̃)
         end
     end
@@ -337,3 +352,5 @@ function hilbert(S::PiecewiseInterlace, z::Number)
     Sb = z in axes(b,1) ? hilbert(b, z) : stieltjes(b, z)/π
     transpose(BlockBroadcastArray(vcat, unitblocks(transpose(Sa)), unitblocks(transpose(Sb))))
 end
+
+stieltjes(S::PiecewiseInterlace, z::AbstractVector) = Vcat((stieltjes(S, z) for z in z)...)
