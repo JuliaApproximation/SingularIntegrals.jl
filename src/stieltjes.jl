@@ -116,7 +116,7 @@ stieltjes(P, y...) = stieltjes_layout(MemoryLayout(P), P, y...)
 
 computes inv.(t'-z) * P/(2π*im) where t = axes(P,1).
 """
-cauchy(f, z...) = stieltjes(f, z...)/(-2convert(eltype(f), π)*im)
+cauchy(f, z...) = stieltjes(f, z...)/(-2convert(eltype(eltype(f)), π)*im) # eltype(eltype(f)) supports array-valued f
 
 """
     hilbert(P, x)

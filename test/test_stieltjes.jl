@@ -285,6 +285,10 @@ end
                 @test lk(f, z) isa Vector
                 @test lk(f, z) ≈ lk(fs, z)
             end
+            @test cauchy(fs, im) isa SVector{2,ComplexF64}
+            @test cauchy(fs, im) ≈ SVector(cauchy(expand(Legendre(), g1), im), cauchy(expand(Legendre(), g2), im)) ≈ stieltjes(fs, im)/(-2π*im)
+            @test cauchy(f, im) isa Vector{ComplexF64}
+            @test cauchy(f, im) ≈ cauchy(fs, im)
         end
 
         @testset "SMatrix" begin
@@ -296,6 +300,10 @@ end
                 @test lk(F, z) isa Matrix
                 @test lk(F, z) ≈ lk(Fs, z)
             end
+            @test cauchy(Fs, 2.0) isa SMatrix{2,2,ComplexF64}
+            @test cauchy(Fs, 2.0) ≈ SMatrix{2,2}(cauchy(expand(P, exp), 2.0), cauchy(expand(P, sin), 2.0), cauchy(expand(P, cos), 2.0), cauchy(expand(P, one), 2.0))
+            @test cauchy(F, 2.0) isa Matrix{ComplexF64}
+            @test cauchy(F, 2.0) ≈ cauchy(Fs, 2.0)
         end
     end
 end
