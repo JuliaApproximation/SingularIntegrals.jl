@@ -354,10 +354,3 @@ function hilbert(S::PiecewiseInterlace, z::Number)
 end
 
 stieltjes(S::PiecewiseInterlace, z::AbstractVector) = Vcat((stieltjes(S, z) for z in z)...)
-
-function stieltjes(S::SetindexInterlace, z::Number)
-    Ss = map(a -> stieltjes(a, z), S.args)
-    z̃ = S.z .+ zero(mapreduce(eltype, promote_type, Ss)) # promote to complex
-    # use hcat as transpose is recursive
-    BlockBroadcastArray{typeof(z̃)}(hcat, map((i,s) -> unitblocks(interlace_setindex.(Ref(z̃), s, i)), Base.OneTo(length(Ss)), Ss)...)
-end

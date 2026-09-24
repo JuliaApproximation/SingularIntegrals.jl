@@ -68,5 +68,15 @@ for lk in (:hilbert, :logkernel, :complexlogkernel, :stieltjes)
     end
 end
 
+# array-valued bases
+for lk in (:hilbert, :logkernel, :complexlogkernel, :stieltjes)
+    @eval function $lk(S::SetindexInterlace, z::Number)
+        Ls = map(a -> $lk(a, z), S.args)
+        z̃ = S.z .+ zero(mapreduce(eltype, promote_type, Ls)) # promote, e.g., to complex
+        # use hcat as transpose is recursive
+        BlockBroadcastArray{typeof(z̃)}(hcat, map((i,L) -> unitblocks(interlace_setindex.(Ref(z̃), L, i)), Base.OneTo(length(Ls)), Ls)...)
+    end
+end
+
 
 end # module SingularIntegrals

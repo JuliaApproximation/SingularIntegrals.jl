@@ -1,4 +1,4 @@
-using SingularIntegrals, ClassicalOrthogonalPolynomials, QuasiArrays, BandedMatrices, ArrayLayouts, LazyArrays, Test
+using SingularIntegrals, ClassicalOrthogonalPolynomials, QuasiArrays, BandedMatrices, ArrayLayouts, LazyArrays, StaticArrays, Test
 using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, paddeddata, colsupport, rowsupport
 using LazyArrays: PaddedLayout
 using ClassicalOrthogonalPolynomials: orthogonalityweight
@@ -272,5 +272,30 @@ end
         P = legendre(0..1)
         @test stieltjes(F, 2) isa Matrix{Float64}
         @test stieltjes(F, 2) ≈ [stieltjes(expand(P, exp), 2) stieltjes(expand(P, cos), 2); stieltjes(expand(P, sin), 2) log(2)]
+
+        # each kernel at points where the scalar version is supported
+        kernels = ((stieltjes, im), (stieltjes, 2.0), (logkernel, 0.3), (logkernel, 0.2+0.1im),
+                   (complexlogkernel, 2.0), (complexlogkernel, 0.2+0.1im), (hilbert, 0.3))
+
+        @testset "SVector" begin
+            fs = expand(SVector(g1(x), g2(x)) for x in ChebyshevInterval())
+            for (lk, z) in kernels
+                @test lk(fs, z) isa SVector{2}
+                @test lk(fs, z) ≈ SVector(lk(expand(Legendre(), g1), z), lk(expand(Legendre(), g2), z))
+                @test lk(f, z) isa Vector
+                @test lk(f, z) ≈ lk(fs, z)
+            end
+        end
+
+        @testset "SMatrix" begin
+            Fs = expand(SMatrix{2,2}(exp(x), sin(x), cos(x), 1) for x in 0..1)
+            # complexlogkernel is not implemented for mapped bases
+            for (lk, z) in ((stieltjes, 2.0), (stieltjes, 0.5+im), (logkernel, 0.3), (logkernel, 2.0), (hilbert, 0.3))
+                @test lk(Fs, z) isa SMatrix{2,2}
+                @test lk(Fs, z) ≈ SMatrix{2,2}(lk(expand(P, exp), z), lk(expand(P, sin), z), lk(expand(P, cos), z), lk(expand(P, one), z))
+                @test lk(F, z) isa Matrix
+                @test lk(F, z) ≈ lk(Fs, z)
+            end
+        end
     end
 end
