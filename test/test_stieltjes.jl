@@ -260,4 +260,17 @@ end
         @test stieltjes(C, z)[3:10] ≈ -logkernel(Legendre(),z)[2:9]
         @test logkernel(C, z)[1:10] ≈ complexlogkernel(C, z)[1:10]
     end
+
+    @testset "array-valued" begin
+        g1 = x -> exp(-40(x-0.1)^2)
+        g2 = x -> cos(x-0.1)*exp(-40(x-0.1)^2)
+        f = expand([g1(x); g2(x)] for x in ChebyshevInterval())
+        @test stieltjes(f, im) isa Vector{ComplexF64}
+        @test stieltjes(f, im) ≈ [stieltjes(expand(Legendre(), g1), im), stieltjes(expand(Legendre(), g2), im)]
+
+        F = expand([exp(x) cos(x); sin(x) 1] for x in 0..1)
+        P = legendre(0..1)
+        @test stieltjes(F, 2) isa Matrix{Float64}
+        @test stieltjes(F, 2) ≈ [stieltjes(expand(P, exp), 2) stieltjes(expand(P, cos), 2); stieltjes(expand(P, sin), 2) log(2)]
+    end
 end
