@@ -337,20 +337,10 @@ function hilbert(W::PiecewiseInterlace{T}) where T
 end
 
 
-function stieltjes(S::PiecewiseInterlace, z::Number)
-    @assert length(S.args) == 2
-    a,b = S.args
-    Sa = stieltjes(a, z)
-    Sb = stieltjes(b, z)
-    transpose(BlockBroadcastArray(vcat, unitblocks(transpose(Sa)), unitblocks(transpose(Sb))))
-end
+# interlace the 1×∞ rows of each piece, using hcat as transpose is recursive for array-valued pieces
+interlacerows(rows) = BlockBroadcastArray{mapreduce(eltype, promote_type, rows)}(hcat, map(unitblocks, rows)...)
 
-function hilbert(S::PiecewiseInterlace, z::Number)
-    @assert length(S.args) == 2
-    a,b = S.args
-    Sa = z in axes(a,1) ? hilbert(a, z) : stieltjes(a, z)/π
-    Sb = z in axes(b,1) ? hilbert(b, z) : stieltjes(b, z)/π
-    transpose(BlockBroadcastArray(vcat, unitblocks(transpose(Sa)), unitblocks(transpose(Sb))))
-end
+stieltjes(S::PiecewiseInterlace, z::Number) = interlacerows(map(a -> stieltjes(a, z), S.args))
+hilbert(S::PiecewiseInterlace, z::Number) = interlacerows(map(a -> z in axes(a,1) ? hilbert(a, z) : stieltjes(a, z)/π, S.args))
 
 stieltjes(S::PiecewiseInterlace, z::AbstractVector) = Vcat((stieltjes(S, z) for z in z)...)

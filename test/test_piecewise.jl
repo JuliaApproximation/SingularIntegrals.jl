@@ -1,4 +1,5 @@
-using ClassicalOrthogonalPolynomials, SingularIntegrals, Test
+using ClassicalOrthogonalPolynomials, SingularIntegrals, StaticArrays, Test
+using ClassicalOrthogonalPolynomials: UnionDomain
 
 @testset "two-interval" begin
     T1,T2 = chebyshevt((-2)..(-1)), chebyshevt(0..2)
@@ -86,4 +87,30 @@ end
         end, x)
     f = W * c
     @test T[0.5,1:200]'*(H*c)[1:200] ≈ -3.0366466972156143
+end
+
+@testset "piecewise at a point" begin
+    d3 = (-1..0, 0..1, 2..3)
+    h = expand(exp(x) for x in UnionDomain(d3...))
+    hs = [expand(exp(x) for x in c) for c in d3]
+    @test stieltjes(h, 5.0) ≈ sum(stieltjes.(hs, 5.0))
+    @test hilbert(h, 2.5) ≈ hilbert(hs[3], 2.5) + (stieltjes(hs[1], 2.5) + stieltjes(hs[2], 2.5))/π
+
+    @testset "vector-valued" begin
+        g = x -> [exp(-40(x-0.1)^2); cos(x-0.1)*exp(-40(x-0.1)^2)]
+        𝐟 = expand(g(x) for x in UnionDomain(-1..0, 0..1))
+        𝐟₁ = expand(g(x) for x in -1..0)
+        𝐟₂ = expand(g(x) for x in 0..1)
+        @test stieltjes(𝐟, im) isa Vector{ComplexF64}
+        for z in (im, 2.0, 0.3+0.1im)
+            @test stieltjes(𝐟, z) ≈ stieltjes(𝐟₁, z) + stieltjes(𝐟₂, z)
+            @test cauchy(𝐟, z) ≈ cauchy(𝐟₁, z) + cauchy(𝐟₂, z)
+        end
+        @test hilbert(𝐟, 0.3) ≈ hilbert(𝐟₂, 0.3) + stieltjes(𝐟₁, 0.3)/π
+        @test hilbert(𝐟, -0.5) ≈ hilbert(𝐟₁, -0.5) + stieltjes(𝐟₂, -0.5)/π
+
+        𝐬 = expand(SVector(exp(x), cos(x)) for x in UnionDomain(d3...))
+        @test stieltjes(𝐬, im) isa SVector{2,ComplexF64}
+        @test stieltjes(𝐬, im) ≈ SVector(stieltjes(h, im), sum(stieltjes.([expand(cos(x) for x in c) for c in d3], im)))
+    end
 end
