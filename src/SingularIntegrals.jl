@@ -1,8 +1,8 @@
 module SingularIntegrals
 using ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, LazyArrays, LazyBandedMatrices, FillArrays, BandedMatrices, LinearAlgebra, SpecialFunctions, HypergeometricFunctions, InfiniteArrays
-using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector, inbounds_getindex, broadcastbasis, MappedBasisLayouts, MemoryLayout, MappedWeightLayout, AbstractWeightLayout, ExpansionLayout, demap, basismap, AbstractBasisLayout, SubBasisLayout
+using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector, inbounds_getindex, broadcastbasis, MappedBasisLayouts, MemoryLayout, MappedWeightLayout, AbstractWeightLayout, ExpansionLayout, demap, basismap, AbstractBasisLayout, SubBasisLayout, PiecewiseBasis
 using QuasiArrays: AbstractQuasiMatrix, BroadcastQuasiMatrix, LazyQuasiArrayStyle, AbstractQuasiVecOrMat
-import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, AbstractJacobi, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, chop, initiateforwardrecurrence, MappedOPLayouts, unweighted, WeightedOPLayout, MappedOPLayout
+import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, AbstractJacobi, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, chop, initiateforwardrecurrence, MappedOPLayouts, unweighted, WeightedOPLayout, MappedOPLayout, SetindexInterlace, interlace_setindex
 using LazyBandedMatrices: Tridiagonal, SymTridiagonal, subdiagonaldata, supdiagonaldata, diagonaldata, ApplyLayout
 import LazyArrays: AbstractCachedMatrix, AbstractCachedArray, paddeddata, arguments, resizedata!, cache_filldata!, zero!, cacheddata, LazyArrayStyle
 import Base: *, +, -, /, \, Slice, axes, getindex, sum, ==, oneto, size, broadcasted, copy, tail, view
@@ -57,8 +57,24 @@ for lk in (:hilbert, :logkernel, :complexlogkernel, :stieltjes)
             *($lk(a[1], y...), tail(a)...)
         end
 
+        # only is needed for array-valued bases which return a 1×∞ matrix as transpose is recursive
+        function $lk_layout(LAY::ApplyLayout{typeof(*)}, V::AbstractQuasiVector, z::Number)
+            a = arguments(LAY, V)
+            only(*($lk(a[1], z), tail(a)...))
+        end
+
         $lk_layout(::ExpansionLayout, A, dims...) = $lk_layout(ApplyLayout{typeof(*)}(), A, dims...)
         $lk_layout(::SubBasisLayout, A, dims...) = $lk(parent(A), dims...)[:, parentindices(A)[2]]
+    end
+end
+
+# array-valued bases
+for lk in (:hilbert, :logkernel, :complexlogkernel, :stieltjes)
+    @eval function $lk(S::SetindexInterlace, z::Number)
+        Ls = map(a -> $lk(a, z), S.args)
+        z̃ = S.z .+ zero(mapreduce(eltype, promote_type, Ls)) # promote, e.g., to complex
+        # use hcat as transpose is recursive
+        BlockBroadcastArray{typeof(z̃)}(hcat, map((i,L) -> unitblocks(interlace_setindex.(Ref(z̃), L, i)), Base.OneTo(length(Ls)), Ls)...)
     end
 end
 
