@@ -1,6 +1,6 @@
 module SingularIntegrals
 using ClassicalOrthogonalPolynomials, ContinuumArrays, QuasiArrays, LazyArrays, LazyBandedMatrices, FillArrays, BandedMatrices, LinearAlgebra, SpecialFunctions, HypergeometricFunctions, InfiniteArrays
-using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector, inbounds_getindex, broadcastbasis, MappedBasisLayouts, MemoryLayout, MappedWeightLayout, AbstractWeightLayout, ExpansionLayout, demap, basismap, AbstractBasisLayout, SubBasisLayout
+using ContinuumArrays: @simplify, Weight, AbstractAffineQuasiVector, inbounds_getindex, broadcastbasis, MappedBasisLayouts, MemoryLayout, MappedWeightLayout, AbstractWeightLayout, ExpansionLayout, demap, basismap, AbstractBasisLayout, SubBasisLayout, PiecewiseBasis
 using QuasiArrays: AbstractQuasiMatrix, BroadcastQuasiMatrix, LazyQuasiArrayStyle, AbstractQuasiVecOrMat
 import ClassicalOrthogonalPolynomials: AbstractJacobiWeight, AbstractJacobi, WeightedBasis, jacobimatrix, orthogonalityweight, recurrencecoefficients, _p0, chop, initiateforwardrecurrence, MappedOPLayouts, unweighted, WeightedOPLayout, MappedOPLayout, SetindexInterlace, interlace_setindex
 using LazyBandedMatrices: Tridiagonal, SymTridiagonal, subdiagonaldata, supdiagonaldata, diagonaldata, ApplyLayout

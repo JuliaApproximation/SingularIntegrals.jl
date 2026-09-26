@@ -344,3 +344,11 @@ stieltjes(S::PiecewiseInterlace, z::Number) = interlacerows(map(a -> stieltjes(a
 hilbert(S::PiecewiseInterlace, z::Number) = interlacerows(map(a -> z in axes(a,1) ? hilbert(a, z) : stieltjes(a, z)/π, S.args))
 
 stieltjes(S::PiecewiseInterlace, z::AbstractVector) = Vcat((stieltjes(S, z) for z in z)...)
+
+###
+# PiecewiseBasis
+###
+
+# the columns of a PiecewiseBasis are the columns of each piece in turn
+stieltjes(S::PiecewiseBasis, z::Union{Number,AbstractVector}) = BlockHcat(map(a -> stieltjes(a, z), S.args)...)
+hilbert(S::PiecewiseBasis, z::Number) = BlockHcat(map(a -> z in axes(a,1) ? hilbert(a, z) : stieltjes(a, z)/π, S.args)...)

@@ -1,5 +1,7 @@
 using ClassicalOrthogonalPolynomials, SingularIntegrals, StaticArrays, Test
 using ClassicalOrthogonalPolynomials: UnionDomain
+using ContinuumArrays: ⊎, PiecewiseBasis
+using LazyBandedMatrices: blocklengths
 
 @testset "two-interval" begin
     T1,T2 = chebyshevt((-2)..(-1)), chebyshevt(0..2)
@@ -113,4 +115,26 @@ end
         @test stieltjes(𝐬, im) isa SVector{2,ComplexF64}
         @test stieltjes(𝐬, im) ≈ SVector(stieltjes(h, im), sum(stieltjes.([expand(cos(x) for x in c) for c in d3], im)))
     end
+end
+
+@testset "PiecewiseBasis" begin
+    n = 5
+    f₁ = legendre(0..1)[:,1:n] * [1, -2, 3, 0.5, 1]
+    f₂ = legendre(-1..0)[:,1:n] * [2, 1, -1, 0.25, 3]
+    f = f₁ ⊎ f₂
+    P = basis(f)
+    @test P isa PiecewiseBasis
+    @test collect(blocklengths(axes(stieltjes(P, im), 2))) == collect(blocklengths(axes(P, 2))) == [n, n]
+
+    for z in (im, 2.0, 0.3+0.1im)
+        @test stieltjes(f, z) ≈ stieltjes(f₁, z) + stieltjes(f₂, z)
+        @test cauchy(f, z) ≈ cauchy(f₁, z) + cauchy(f₂, z)
+    end
+    zs = [im, 2.0, 0.3+0.1im]
+    @test stieltjes(f, zs) ≈ stieltjes(f₁, zs) + stieltjes(f₂, zs)
+    @test hilbert(f, 0.3) ≈ hilbert(f₁, 0.3) + stieltjes(f₂, 0.3)/π
+    @test hilbert(f, -0.5) ≈ hilbert(f₂, -0.5) + stieltjes(f₁, -0.5)/π
+
+    x = axes(f,1)
+    @test inv.(im .- x') * f ≈ stieltjes(f, im)
 end
