@@ -1,4 +1,4 @@
-using SingularIntegrals, ClassicalOrthogonalPolynomials, QuasiArrays, BandedMatrices, ArrayLayouts, LazyArrays, Test
+using SingularIntegrals, ClassicalOrthogonalPolynomials, QuasiArrays, BandedMatrices, ArrayLayouts, LazyArrays, StaticArrays, Test
 using LazyBandedMatrices: blockcolsupport, Block, BlockHcat, blockbandwidths, paddeddata, colsupport, rowsupport
 using LazyArrays: PaddedLayout
 using ClassicalOrthogonalPolynomials: orthogonalityweight
@@ -259,5 +259,51 @@ end
         
         @test stieltjes(C, z)[3:10] ≈ -logkernel(Legendre(),z)[2:9]
         @test logkernel(C, z)[1:10] ≈ complexlogkernel(C, z)[1:10]
+    end
+
+    @testset "array-valued" begin
+        g1 = x -> exp(-40(x-0.1)^2)
+        g2 = x -> cos(x-0.1)*exp(-40(x-0.1)^2)
+        f = expand([g1(x); g2(x)] for x in ChebyshevInterval())
+        @test stieltjes(f, im) isa Vector{ComplexF64}
+        @test stieltjes(f, im) ≈ [stieltjes(expand(Legendre(), g1), im), stieltjes(expand(Legendre(), g2), im)]
+
+        F = expand([exp(x) cos(x); sin(x) 1] for x in 0..1)
+        P = legendre(0..1)
+        @test stieltjes(F, 2) isa Matrix{Float64}
+        @test stieltjes(F, 2) ≈ [stieltjes(expand(P, exp), 2) stieltjes(expand(P, cos), 2); stieltjes(expand(P, sin), 2) log(2)]
+
+        # each kernel at points where the scalar version is supported
+        kernels = ((stieltjes, im), (stieltjes, 2.0), (logkernel, 0.3), (logkernel, 0.2+0.1im),
+                   (complexlogkernel, 2.0), (complexlogkernel, 0.2+0.1im), (hilbert, 0.3))
+
+        @testset "SVector" begin
+            fs = expand(SVector(g1(x), g2(x)) for x in ChebyshevInterval())
+            for (lk, z) in kernels
+                @test lk(fs, z) isa SVector{2}
+                @test lk(fs, z) ≈ SVector(lk(expand(Legendre(), g1), z), lk(expand(Legendre(), g2), z))
+                @test lk(f, z) isa Vector
+                @test lk(f, z) ≈ lk(fs, z)
+            end
+            @test cauchy(fs, im) isa SVector{2,ComplexF64}
+            @test cauchy(fs, im) ≈ SVector(cauchy(expand(Legendre(), g1), im), cauchy(expand(Legendre(), g2), im)) ≈ stieltjes(fs, im)/(-2π*im)
+            @test cauchy(f, im) isa Vector{ComplexF64}
+            @test cauchy(f, im) ≈ cauchy(fs, im)
+        end
+
+        @testset "SMatrix" begin
+            Fs = expand(SMatrix{2,2}(exp(x), sin(x), cos(x), 1) for x in 0..1)
+            # complexlogkernel is not implemented for mapped bases
+            for (lk, z) in ((stieltjes, 2.0), (stieltjes, 0.5+im), (logkernel, 0.3), (logkernel, 2.0), (hilbert, 0.3))
+                @test lk(Fs, z) isa SMatrix{2,2}
+                @test lk(Fs, z) ≈ SMatrix{2,2}(lk(expand(P, exp), z), lk(expand(P, sin), z), lk(expand(P, cos), z), lk(expand(P, one), z))
+                @test lk(F, z) isa Matrix
+                @test lk(F, z) ≈ lk(Fs, z)
+            end
+            @test cauchy(Fs, 2.0) isa SMatrix{2,2,ComplexF64}
+            @test cauchy(Fs, 2.0) ≈ SMatrix{2,2}(cauchy(expand(P, exp), 2.0), cauchy(expand(P, sin), 2.0), cauchy(expand(P, cos), 2.0), cauchy(expand(P, one), 2.0))
+            @test cauchy(F, 2.0) isa Matrix{ComplexF64}
+            @test cauchy(F, 2.0) ≈ cauchy(Fs, 2.0)
+        end
     end
 end
