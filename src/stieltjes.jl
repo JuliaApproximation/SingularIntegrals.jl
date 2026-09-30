@@ -259,8 +259,9 @@ hilbert(J::AbstractJacobi{T}, z...) where T = hilbert(Legendre{T}(), z...) * (Le
     stieltjes(wP, z)
 end
 
-@simplify function *(S::StieltjesPoints, P::Legendre)
-    S * Weighted(P)
+@simplify function *(S::StieltjesPoints, P::AbstractJacobi)
+    z = S.args[1].args[1] # vector of points to eval at
+    stieltjes(P, z)
 end
 
 
