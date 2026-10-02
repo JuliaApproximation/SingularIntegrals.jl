@@ -24,7 +24,7 @@ using ClassicalOrthogonalPolynomials: affine
 
     @testset "expand" begin
         @test complexlogkernel(exp.(x), 2 + im) ≈ sum(log.((2+im) .- x) .* exp.(x))
-        @test_throws ArgumentError complexlogkernel(Jacobi(0.1,0.2), 2+im)
+        @test complexlogkernel(Jacobi(0.1,0.2), 2+im)[1:5]  ≈ [sum(log((2+im) - x)jacobip(k,0.1,0.2,x) for x in -1..1) for k = 0:4]
     end
 
     @testset "endpoints" begin

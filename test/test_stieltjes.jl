@@ -79,6 +79,38 @@ using SingularIntegrals: PVStieltjes, StieltjesPoint
         P = Jacobi(1,2)
         @test hilbert(P, 0.1)[1:10] ≈ (stieltjes(P, 0.1+0im)[1:10] + stieltjes(P, 0.1-0im)[1:10])/2π
     end
+
+    @testset "ChebyshevT" begin
+        T = ChebyshevT()
+        x = axes(T,1)
+        for z in (2.0, -1.5, 0.1+0.2im, 10.0+5im)
+            S = stieltjes(T, z)
+            @test S[1,1:5] ≈ S[1:5] ≈ [sum(T[:,k] ./ (z .- x)) for k=1:5]
+            @test cauchy(T, z)[1,1:5] ≈ S[1,1:5]/(-2π*im)
+            # S[n+1] == 2z S[n] - S[n-1] - 2∫T_n
+            @test S[1,3:100] ≈ 2z*S[1,2:99] - S[1,1:98] - 2vec(sum(T; dims=1)[2:99])
+        end
+        @test length(stieltjes(T, 2+im)[1,1:1000]) == length(cauchy(T, 2+im)[1,1:1000]) == 1000
+        @test stieltjes(T, 0.3+0im)[1,1:10] ≈ conj(stieltjes(T, 0.3-0im)[1,1:10])
+        @test imag(stieltjes(T, 0.3+0im)[1,1:10]) ≈ -π*T[0.3,1:10]
+
+        z = 0.1+0.2im
+        f = expand(T, exp)
+        @test stieltjes(f, z) ≈ inv.(z .- x') * f ≈ sum(exp.(x) ./ (z .- x))
+        @test cauchy(f, z) ≈ stieltjes(f, z)/(-2π*im)
+
+        zs = [2.0, 3.0+im]
+        @test (inv.(zs .- x') * T)[:,1:5] ≈ stieltjes(T, zs)[:,1:5] ≈ [transpose(stieltjes(T, zs[1])[1,1:5]); transpose(stieltjes(T, zs[2])[1,1:5])]
+        @test inv.(zs .- x') * f ≈ stieltjes(f, zs) ≈ [stieltjes(f, z) for z in zs]
+
+        @testset "mapped" begin
+            T = chebyshevt(0..2)
+            y = axes(T,1)
+            f = expand(T, exp)
+            @test cauchy(T, 3+im)[1,1:5] ≈ [sum(T[:,k] ./ (y .- (3+im))) for k=1:5]/(2π*im)
+            @test cauchy(f, 3+im) ≈ sum(exp.(y) ./ (y .- (3+im)))/(2π*im)
+        end
+    end
 end
 
 @testset "StieltjesPoint" begin

@@ -1,6 +1,6 @@
 name = "SingularIntegrals"
 uuid = "d7440221-8b5e-42fc-909c-0567823f424a"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Sheehan Olver <solver@mac.com>"]
 
 [deps]
@@ -24,12 +24,12 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 ArrayLayouts = "1.4"
 BandedMatrices = "1"
 ClassicalOrthogonalPolynomials = "0.15.22"
-ContinuumArrays = "0.18, 0.19, 0.20, 0.21"
+ContinuumArrays = "0.21.6"
 FastTransforms = "0.16, 0.17"
 FillArrays = "1"
 HypergeometricFunctions = "0.3.4"
 InfiniteArrays = "0.14, 0.15"
-LazyArrays = "2"
+LazyArrays = "2.14.2"
 LazyBandedMatrices = "0.10, 0.11"
 LinearAlgebra = "1.10"
 QuasiArrays = "0.11, 0.12, 0.13"
