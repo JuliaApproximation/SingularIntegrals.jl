@@ -1,0 +1,7 @@
+[deps]
+ClassicalOrthogonalPolynomials = "b30e2e7b-c4ee-47da-9d5f-2c5c27239acd"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+SingularIntegrals = "d7440221-8b5e-42fc-909c-0567823f424a"
+
+[sources]
+SingularIntegrals = {path = ".."}
