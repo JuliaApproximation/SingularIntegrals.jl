@@ -8,3 +8,4 @@ SingularIntegrals = {path = ".."}
 
 [compat]
 ClassicalOrthogonalPolynomials = "0.15.27"
+Documenter = "1.19.0"
