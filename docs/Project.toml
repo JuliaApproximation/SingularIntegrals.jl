@@ -7,4 +7,5 @@ SingularIntegrals = "d7440221-8b5e-42fc-909c-0567823f424a"
 SingularIntegrals = {path = ".."}
 
 [compat]
+ClassicalOrthogonalPolynomials = "0.15.27"
 Documenter = "1.19.0"
